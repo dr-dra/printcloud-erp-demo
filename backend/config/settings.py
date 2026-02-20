@@ -230,6 +230,11 @@ CSRF_TRUSTED_ORIGINS = [
 # Frontend URL for generating share links
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
+# Demo magic-link login (disabled by default; enable only on demo deployment)
+DEMO_MAGIC_LINK_ENABLED = config('DEMO_MAGIC_LINK_ENABLED', default=False, cast=bool)
+DEMO_MAGIC_LINK_TOKEN = config('DEMO_MAGIC_LINK_TOKEN', default='')
+DEMO_MAGIC_LINK_USER_EMAIL = config('DEMO_MAGIC_LINK_USER_EMAIL', default='demo@printcloud.io')
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

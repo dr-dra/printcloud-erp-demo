@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -11,6 +11,7 @@ import { StandardTextInput } from '@/components/common/inputs';
 import { HiMail, HiLockClosed, HiEye, HiEyeOff, HiShieldCheck } from 'react-icons/hi';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import { api } from '@/lib/api';
 
 // Form validation schema with enhanced security
 const loginSchema = yup.object({
@@ -34,8 +35,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [lastAttemptTime, setLastAttemptTime] = useState<number>(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const magicAttemptedRef = useRef(false);
   const { login, loading } = useAuth();
 
   const {
@@ -80,21 +84,46 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <div className="login-ambient min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
-      <div className="login-ambient__layer login-ambient__base" aria-hidden />
-      <div className="login-ambient__layer login-ambient__blob login-ambient__blob--a" aria-hidden />
-      <div className="login-ambient__layer login-ambient__blob login-ambient__blob--b" aria-hidden />
-      <div className="login-ambient__layer login-ambient__grain" aria-hidden />
+  useEffect(() => {
+    const token = searchParams.get('magic');
+    if (!token || magicAttemptedRef.current) return;
 
-      <div
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 p-1 -translate-x-[30px]"
-        style={{ zIndex: 20 }}
-      >
+    magicAttemptedRef.current = true;
+
+    const runMagicLogin = async () => {
+      setError('');
+      setIsMagicLoading(true);
+      try {
+        const response = await api.post('/users/demo/magic-link/', { token });
+        const access = response.data?.access;
+        const refresh = response.data?.refresh;
+
+        if (!access || !refresh) {
+          throw new Error('Missing tokens in magic link response');
+        }
+
+        localStorage.setItem('accessToken', access);
+        localStorage.setItem('refreshToken', refresh);
+        router.replace('/dashboard');
+      } catch (err) {
+        console.error('[Login] Magic link login failed:', err);
+        setError('This magic link is invalid or expired. Please sign in manually.');
+      } finally {
+        setIsMagicLoading(false);
+      }
+    };
+
+    runMagicLogin();
+  }, [router, searchParams]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
+      {/* Theme Toggle - Top Right */}
+      <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
 
-      <div className="max-w-md w-full space-y-8 relative z-10">
+      <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">PrintCloud.io</h1>
@@ -108,7 +137,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <Card className="shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-[2px]">
+        <Card className="shadow-lg">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Error Alert */}
             {error && (
@@ -129,7 +158,7 @@ export default function LoginPage() {
                 placeholder="Enter your email"
                 color={errors.email ? 'failure' : undefined}
                 helperText={errors.email?.message}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isMagicLoading}
                 {...register('email')}
               />
             </div>
@@ -147,14 +176,14 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   color={errors.password ? 'failure' : undefined}
                   helperText={errors.password?.message}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isMagicLoading}
                   {...register('password')}
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isMagicLoading}
                 >
                   {showPassword ? (
                     <HiEyeOff className="h-5 w-5 text-gray-400" />
@@ -169,9 +198,14 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isSubmitting || loading || isRateLimited()}
+              disabled={isSubmitting || isMagicLoading || loading || isRateLimited()}
             >
-              {isSubmitting || loading ? (
+              {isMagicLoading ? (
+                <div className="flex items-center">
+                  <Spinner size="sm" className="mr-2" />
+                  Opening demo...
+                </div>
+              ) : isSubmitting || loading ? (
                 <div className="flex items-center">
                   <Spinner size="sm" className="mr-2" />
                   Signing in...

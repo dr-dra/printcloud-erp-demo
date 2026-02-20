@@ -1,5 +1,12 @@
 from django.urls import path, include
-from .views import UserProfileView, upload_profile_picture, change_password, user_profile_summary, crop_profile_picture_server
+from .views import (
+    UserProfileView,
+    upload_profile_picture,
+    change_password,
+    user_profile_summary,
+    crop_profile_picture_server,
+    demo_magic_link_login,
+)
 
 urlpatterns = [
     # Our specific profile routes first
@@ -9,6 +16,7 @@ urlpatterns = [
     path('profile/change-password/', change_password, name='change-password'),
     path('profile/summary/', user_profile_summary, name='user-profile-summary'),
     path('profile/crop-picture/', crop_profile_picture_server, name='crop-profile-picture'),
+    path('demo/magic-link/', demo_magic_link_login, name='demo-magic-link-login'),
 
     # Auth routes after
     path('', include('djoser.urls')),

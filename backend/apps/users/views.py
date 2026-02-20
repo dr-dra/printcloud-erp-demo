@@ -5,10 +5,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import secrets
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -23,6 +25,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .serializers import (
@@ -161,11 +164,9 @@ def upload_profile_picture(request):
         employee.profile_picture = display_filename  # Store just display filename for reference
         employee.save()
 
-        # Return versioned URLs to avoid browser cache showing stale images
-        display_version = int(os.path.getmtime(display_path))
-        original_version = int(os.path.getmtime(original_path))
-        profile_picture_url = f'/images/profile-pictures/{display_filename}?v={display_version}'
-        original_image_url = f'/images/profile-pictures/{original_filename}?v={original_version}'
+        # Return the static URLs
+        profile_picture_url = f'/images/profile-pictures/{display_filename}'
+        original_image_url = f'/images/profile-pictures/{original_filename}'
 
         return Response({
             'message': 'Profile picture uploaded successfully',
@@ -244,6 +245,61 @@ def change_password(request):
         )
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def demo_magic_link_login(request):
+    """
+    Demo-only authentication entrypoint.
+    When enabled, validates a shared magic token and returns JWT tokens
+    for a designated demo user.
+    """
+    if not settings.DEMO_MAGIC_LINK_ENABLED:
+        return Response(
+            {'detail': 'Magic link login is disabled.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    provided_token = str(request.data.get('token', '')).strip()
+    expected_token = str(settings.DEMO_MAGIC_LINK_TOKEN or '').strip()
+
+    if not provided_token or not expected_token:
+        return Response(
+            {'detail': 'Invalid magic link token.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not secrets.compare_digest(provided_token, expected_token):
+        return Response(
+            {'detail': 'Invalid magic link token.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    user_model = get_user_model()
+    user = user_model.objects.filter(email=settings.DEMO_MAGIC_LINK_USER_EMAIL).first()
+
+    if not user:
+        return Response(
+            {'detail': 'Demo user is not configured.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if not user.is_active:
+        return Response(
+            {'detail': 'Demo user is inactive.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    refresh = RefreshToken.for_user(user)
+
+    return Response(
+        {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        },
+        status=status.HTTP_200_OK
+    )
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_profile_summary(request):
@@ -262,17 +318,16 @@ def user_profile_summary(request):
         original_filename = f'user_{user_id}_original.jpg'
         profile_path = os.path.join(frontend_public_dir, profile_filename)
         original_path = os.path.join(frontend_public_dir, original_filename)
-        if os.path.exists(profile_path):
-            profile_version = int(os.path.getmtime(profile_path))
-            profile_url = f'/images/profile-pictures/{profile_filename}?v={profile_version}'
-        else:
-            profile_url = None
-
-        if os.path.exists(original_path):
-            original_version = int(os.path.getmtime(original_path))
-            original_url = f'/images/profile-pictures/{original_filename}?v={original_version}'
-        else:
-            original_url = None
+        profile_url = (
+            f'/images/profile-pictures/{profile_filename}'
+            if os.path.exists(profile_path)
+            else None
+        )
+        original_url = (
+            f'/images/profile-pictures/{original_filename}'
+            if os.path.exists(original_path)
+            else None
+        )
         
         # Base profile data
         profile_data = {
@@ -395,9 +450,8 @@ def crop_profile_picture_server(request):
         employee.profile_picture = display_filename
         employee.save()
 
-        # Return versioned URL for the cropped image to bust cache
-        display_version = int(os.path.getmtime(display_path))
-        profile_picture_url = f'/images/profile-pictures/{display_filename}?v={display_version}'
+        # Return the static URL for the cropped image
+        profile_picture_url = f'/images/profile-pictures/{display_filename}'
 
         return Response({
             'message': 'Profile picture cropped successfully',
