@@ -235,15 +235,6 @@ DEMO_MAGIC_LINK_ENABLED = config('DEMO_MAGIC_LINK_ENABLED', default=False, cast=
 DEMO_MAGIC_LINK_TOKEN = config('DEMO_MAGIC_LINK_TOKEN', default='')
 DEMO_MAGIC_LINK_USER_EMAIL = config('DEMO_MAGIC_LINK_USER_EMAIL', default='demo@printcloud.io')
 
-# Login alert emails (disabled by default)
-LOGIN_ALERTS_ENABLED = config('LOGIN_ALERTS_ENABLED', default=False, cast=bool)
-LOGIN_ALERT_RECIPIENTS_RAW = config('LOGIN_ALERT_RECIPIENTS', default='')
-LOGIN_ALERT_RECIPIENTS = [
-    email.strip()
-    for email in LOGIN_ALERT_RECIPIENTS_RAW.split(',')
-    if email.strip()
-]
-
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
