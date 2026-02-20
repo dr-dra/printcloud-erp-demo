@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -38,7 +38,6 @@ export default function LoginPage() {
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [lastAttemptTime, setLastAttemptTime] = useState<number>(0);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const magicAttemptedRef = useRef(false);
   const { login, loading } = useAuth();
 
@@ -85,7 +84,9 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const token = searchParams.get('magic');
+    if (typeof window === 'undefined') return;
+
+    const token = new URLSearchParams(window.location.search).get('magic');
     if (!token || magicAttemptedRef.current) return;
 
     magicAttemptedRef.current = true;
@@ -114,7 +115,7 @@ export default function LoginPage() {
     };
 
     runMagicLogin();
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
