@@ -27,6 +27,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .login_alerts import send_login_alert
 from .models import User
 from .serializers import (
     UserProfileSerializer,
@@ -290,6 +291,7 @@ def demo_magic_link_login(request):
         )
 
     refresh = RefreshToken.for_user(user)
+    send_login_alert(user, request, login_method='magic_link')
 
     return Response(
         {

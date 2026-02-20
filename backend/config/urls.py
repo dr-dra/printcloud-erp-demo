@@ -3,11 +3,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from apps.users.auth_views import LoginAlertTokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
     # API Routes
+    path('api/auth/jwt/create/', LoginAlertTokenObtainPairView.as_view(), name='jwt-create'),
     path('api/auth/', include('djoser.urls')),                         # Registration, Activation, etc.
     path('api/auth/', include('djoser.urls.jwt')),                     # JWT login/logout
     path('api/users/', include('apps.users.urls')),                    # Custom user views (optional, if you create)
