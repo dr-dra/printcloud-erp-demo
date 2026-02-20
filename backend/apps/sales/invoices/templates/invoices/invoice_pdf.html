@@ -1,0 +1,574 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Medium.ttf') format('truetype');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        @page {
+            size: A4;
+            margin: 12.7mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #000000;
+            background: white;
+            width: 185mm;
+            min-height: 297mm;
+        }
+
+        .container {
+            width: 100%;
+            min-height: 297mm;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .content {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8mm;
+            border-bottom: 1pt solid #e5e7eb;
+            padding-bottom: 5mm;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 3px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+
+        .header-left .invoice-number {
+            font-size: 16px;
+            font-weight: 400;
+            color: #000000;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+
+        .header-left .invoice-type {
+            font-size: 12px;
+            color: #000000;
+            margin-top: 4px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .company-logo {
+            width: 207px;
+            height: auto;
+            margin-bottom: 12px;
+            display: block;
+            margin-left: auto;
+            margin-bottom: 15px;
+        }
+
+        .company-logo svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .company-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 8px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+
+        .company-info {
+            font-size: 12px;
+            color: #000000;
+            line-height: 1.5;
+        }
+
+        /* Customer and Date Details */
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8mm;
+        }
+
+        .customer-details {
+            flex: 1;
+        }
+
+        .date-details {
+            flex: 1;
+            text-align: right;
+        }
+
+        .details-section h3 {
+            font-weight: 300;
+            color: #000000;
+            margin-bottom: 6px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12px;
+        }
+
+        .details-section .customer-name {
+            font-weight: 600;
+            color: #070707;
+            margin-bottom: 1px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 13px;
+        }
+
+        .details-section .customer-email {
+            color: #000000;
+            font-size: 12px;
+        }
+
+        .details-section .customer-address {
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .details-section .customer-contact {
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .prepared-by {
+            margin-bottom: 16px;
+        }
+
+        .prepared-label {
+            font-weight: 300;
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+
+        .prepared-contact {
+            color: #000000;
+            font-size: 11px;
+        }
+
+        .dates-inline {
+            text-align: right;
+        }
+
+        .date-item {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .date-label {
+            font-weight: 300;
+            color: #000000;
+            margin-right: 8px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+
+        .date-value {
+            font-weight: 400;
+            color: #000000;
+        }
+
+        /* Reference Section */
+        .project-section {
+            margin-bottom: 5mm;
+        }
+
+        .project-section h3 {
+            font-weight: 300;
+            color: #000000;
+            margin-bottom: 2px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12px;
+        }
+
+        .project-description {
+            color: #000000;
+            font-size: 14px;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8mm;
+            border-top: 0.5pt solid #d1d5db;
+            border-bottom: 0.5pt solid #d1d5db;
+        }
+
+        .items-table th {
+            background-color: #e8ebeb;
+            border-bottom: 0.5pt solid #d1d5db;
+            padding: 2mm 3mm;
+            font-weight: 600;
+            color: #000000;
+            text-align: left;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 11.5px;
+        }
+
+        .items-table th.text-center {
+            text-align: center;
+        }
+
+        .items-table th.text-right {
+            text-align: right;
+        }
+
+        .items-table td {
+            border-bottom: 0.5pt solid #d1d5db;
+            padding: 2mm 3mm;
+            color: #000000;
+            vertical-align: top;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12.5px;
+        }
+
+        .items-table td.text-center {
+            text-align: center;
+        }
+
+        .items-table td.text-right {
+            text-align: right;
+        }
+
+        .pricing-columns {
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+            color: #000000;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .item-description {
+            font-size: 12px;
+            color: #000000;
+            white-space: pre-line;
+            font-weight: 200;
+        }
+
+        /* Totals Section */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+
+        .totals-table {
+            width: 350px;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .totals-row.grand-total {
+            border-top: 1px solid #d1d5db;
+            padding-top: 12px;
+            margin-top: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #000000;
+        }
+
+        .totals-row.grand-total .totals-label,
+        .totals-row.grand-total .totals-value {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .totals-label {
+            font-weight: 500;
+            color: #000000;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+        }
+
+        .totals-value {
+            color: #000000;
+            font-size: 14px;
+        }
+
+        .totals-row:first-child .totals-label,
+        .totals-row:first-child .totals-value {
+            font-size: 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .currency {
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            font-size: 12px;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
+                font-size: 12pt;
+            }
+
+            .container {
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .content {
+                flex: 1;
+                margin-bottom: 20px;
+            }
+
+            .footer {
+                flex-shrink: 0;
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-inside: avoid;
+            }
+
+            .items-table {
+                page-break-inside: auto;
+            }
+
+            .items-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+            .totals-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <div class="company-logo">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 167.56 20.98">
+                            <defs><style>.cls-1{fill:#231f20;stroke-width:0}</style></defs>
+                            <path d="M19.67 7.9V5.46h-2.14l2.14 2.44Zm-6.81 8.75c0 .92.31 1.23 1.14 2.06 1.7 1.63 4 1.29 7.16 1.2-.52-2.24-1.2-4.75-1.31-7.04-1.22.25-6.99 2.12-6.99 3.79ZM7.23 7.76c.13.72 2.8 5.18 3.41 6.25l1.21 2.05c.99-2.21 5.68-3.64 9.58-4.65L12.51 1.3c-1.33.46-5.95 4.32-5.27 6.46Zm-.54 1.06c.12.18 3.85 6.74 4.29 7.54l1.82 2.32-2.79-1.97-6.09-8.52-1.32-.24 6.54 9.46 3.5 2.32c-.41-.03-3.54-.92-3.81-1.18-2.08-2.86-4.38-5.87-6.45-8.74l-1.26-.09 7.07 9.69 1.56.47-2.41.03-6.22-8.3-1.12.12c1.16 1.71 6.47 8.38 6.7 9.24h16c-.74-2.51-1.72-5.89-1.72-8.41.45-.04 1.78-.52 2.19-.53l-2.29-2.68c-.26-.28-.14-.39-.14-1.12l.12-3.67h-3.91c-.21-.04-.32-.15-.45-.32L12.86 0l-1.21.75C9.21 2.38 4.96 5.56 6.69 8.83Z" style="fill:#007abd;fill-rule:evenodd;stroke-width:0"/>
+                            <path d="M37.17 19.98c.1.12 0 .24-.12.24h-2.94c-.2 0-.27-.02-.39-.2l-6.03-7.23v7.23c0 .15-.07.2-.2.2h-2.45c-.12 0-.2-.05-.2-.22V4.43c0-.15.05-.2.17-.2h2.5c.12 0 .17.05.17.2v7.15l5.88-7.2c.1-.1.15-.15.29-.15h2.69c.2 0 .22.15.15.24l-6.15 7.27c-.07.07-.07.15 0 .22l6.61 8.01Z" class="cls-1"/>
+                            <path d="m40.98 15.94-1.27 4.12c-.05.12-.12.17-.24.17h-2.35c-.15 0-.2-.07-.15-.22l4.68-14.33c.1-.25.17-.49.2-1.27 0-.1.05-.17.15-.17h3.28c.1 0 .15.02.17.15l5.27 15.65c.02.12 0 .2-.15.2h-2.62c-.12 0-.17-.05-.22-.15l-1.35-4.14h-5.39Zm4.68-2.57c-.47-1.64-1.57-5-1.98-6.74h-.02c-.39 1.64-1.27 4.48-1.96 6.74h3.97ZM52.73 20.23c-.12 0-.2-.02-.2-.22V4.4c0-.12.05-.17.17-.17h3.28c.17 0 .2.05.27.17 1.67 3.16 5.19 10.14 5.95 11.88h.03c-.03-.71-.07-1.69-.07-3.85v-8c0-.12.05-.2.2-.2h2.25c.17 0 .22.07.22.22V20c0 .17-.07.22-.24.22h-2.96c-.17 0-.22-.05-.29-.17-1.2-2.57-5.34-10.34-6.22-12.69h-.03c.07 1.2.12 2.42.12 4.55v8.11c0 .12-.05.2-.2.2h-2.28ZM68.3 4.45c0-.12.03-.17.15-.2.66-.02 2.3-.07 4.31-.07 5.44 0 8.18 3.21 8.18 7.76 0 6.12-4.46 8.33-8.25 8.33-1.42 0-3.5 0-4.24-.05-.1 0-.15-.07-.15-.22V4.45Zm2.84 13.3c.44.03.93.05 1.47.05 3.16 0 5.39-1.98 5.39-5.78s-2.23-5.34-5.24-5.34c-.61 0-1.1 0-1.62.02v11.05ZM81.18 4.45c-.1-.12.02-.22.12-.22h2.82c.15 0 .17.05.22.15 2.4 4.82 3.18 6.47 3.55 7.32.37-.91 1.1-2.55 3.4-7.32.03-.12.1-.15.22-.15h2.67c.15 0 .15.1.12.2l-5 9.38c-.15.24-.2.44-.2.71v5.51c0 .15-.05.2-.2.2h-2.42c-.17 0-.22-.05-.22-.2v-5.58c0-.32-.02-.47-.17-.76l-4.92-9.23ZM108.55 12.07c.02 5.39-2.82 8.38-6.78 8.38-4.34 0-6.88-3.4-6.88-8.3s2.89-8.23 6.86-8.23c4.24 0 6.79 3.45 6.81 8.16Zm-6.73 6.61c3.01 0 4.73-2.62 4.7-6.56 0-3.82-1.86-6.42-4.82-6.42-2.67 0-4.78 2.16-4.78 6.44 0 3.55 1.67 6.54 4.9 6.54ZM113.34 20.06c0 .12-.05.17-.17.17h-1.67c-.1 0-.15-.05-.15-.17V4.31c0-.1.02-.15.15-.15h8.45c.12 0 .15.03.17.15l.17 1.49c.02.1-.02.15-.15.15h-6.81v5.41h6.07c.12 0 .15.05.15.15v1.52c0 .1-.05.15-.15.15h-6.07v6.88ZM124.58 20.06c0 .12-.05.17-.17.17h-1.67c-.1 0-.15-.05-.15-.17V4.31c0-.1.02-.15.15-.15h8.45c.12 0 .15.03.17.15l.17 1.49c.02.1-.02.15-.15.15h-6.81v5.41h6.07c.12 0 .15.05.15.15v1.52c0 .1-.05.15-.15.15h-6.07v6.88ZM133.44 19.59a.316.316 0 0 1-.15-.29v-1.71c0-.07.1-.12.17-.07 1.2.81 2.65 1.15 3.92 1.15 2.23 0 3.23-1.05 3.23-2.5 0-1.15-.59-2.01-2.74-3.06l-.98-.44c-2.82-1.35-3.5-2.84-3.5-4.46 0-2.5 1.86-4.29 5.02-4.29 1.49 0 2.67.24 3.35.61.1.05.12.12.12.24v1.59c0 .1-.07.17-.17.1-.81-.51-2.06-.76-3.33-.76-2.42 0-3.06 1.35-3.06 2.33 0 1.13.59 1.93 2.65 2.91l.96.44c2.87 1.35 3.67 2.84 3.67 4.63 0 2.57-1.89 4.43-5.27 4.43-1.57 0-2.99-.32-3.89-.86ZM154.5 20.08c-.02.12-.07.15-.20.15h-8.75c-.15 0-.20-.05-.20-.17V4.33c0-.12.05-.17.17-.17h8.40c.12 0 .15.03.17.12l.20 1.49c.02.10-.02.17-.15.17h-6.81v5.14h6.15c.10 0 .15.05.15.15v1.52c0 .10-.07.15-.17.15h-6.12v5.54h7.27c.12 0 .15.02.12.15l-.25 1.49ZM160.59 5.95h-4.87c-.10 0-.15-.05-.12-.17l.24-1.47c.03-.10.07-.15.20-.15h11.17c.12 0 .17.03.20.15l.15 1.47c.02.12-.03.17-.12.17h-4.88v14.11c0 .12-.05.17-.15.17h-1.64c-.12 0-.17-.05-.17-.17V5.95Z" class="cls-1"/>
+                        </svg>
+                    </div>
+                    <h1>INVOICE</h1>
+                    <div class="invoice-number">#{{ invoice.invoice_number }}</div>
+                    <div class="invoice-type">
+                        {% if invoice.invoice_type == 'tax_invoice' %}
+                            Tax Invoice
+                        {% else %}
+                            Proforma Invoice
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="company-name">Kandy Offset Printers (Pvt) Ltd</div>
+                    <div class="company-info">
+                        <div>No. 947 Peradeniya Road Kandy</div>
+                        <div>0814946426</div>
+                        <div>info@printsrilanka.com</div>
+                        <div>kandyoffset.com</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer and Date Details -->
+            <div class="details-section">
+                <div class="customer-details">
+                    <div>To:</div>
+                    <div class="customer-name">{{ invoice.customer.name|default:"No Customer" }}</div>
+                    {% with invoice.customer.addresses|primary_address as address %}
+                        {% if address %}
+                            <div class="customer-address">
+                                {{ address.line1 }}{% if address.line2|default:""|cut:" " %}, {{ address.line2 }}{% endif %}{% if address.city|default:""|cut:" " %}, {{ address.city }}{% endif %}{% if address.zip_code|default:""|cut:" " %}, {{ address.zip_code }}{% endif %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    {% if invoice.customer.contact %}
+                        <div class="customer-contact">{{ invoice.customer.contact }}</div>
+                    {% endif %}
+                    {% if invoice.customer.email %}
+                        <div class="customer-email">{{ invoice.customer.email }}</div>
+                    {% endif %}
+                </div>
+                <div class="date-details">
+                    {% if invoice.created_by %}
+                    <div class="prepared-by">
+                        <div class="prepared-label">Prepared By: {{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</div>
+                        <div class="prepared-contact">
+                            {% if invoice.created_by.email %}{{ invoice.created_by.email }}{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="dates-inline">
+                        <div class="date-item">
+                            <span class="date-label">Invoice Date</span>
+                            <span class="date-value">{{ invoice.invoice_date|date:"d M Y"|default:"-" }}</span>
+                        </div>
+                        <div class="date-item">
+                            <span class="date-label">Due Date</span>
+                            <span class="date-value">{{ invoice.due_date|date:"d M Y"|default:"-" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reference -->
+            <div class="project-section">
+                <h3>Reference</h3>
+                <div class="project-description">
+                    {% if invoice.po_so_number %}
+                        PO/SO #{{ invoice.po_so_number }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <table class="items-table">
+                <colgroup>
+                    <col style="width: 47%;">
+                    <col style="width: 16%;">
+                    <col style="width: 16%;">
+                    <col style="width: 21%;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Item/Description</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-right">Unit Price</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items.all %}
+                    <tr>
+                        <td>
+                            <div class="item-name">{{ item.item_name|default:"Unnamed Item" }}</div>
+                            {% if item.description %}
+                                <div class="item-description">{{ item.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ item.quantity|floatformat:0 }}</td>
+                        <td class="text-right pricing-columns">{{ item.unit_price|indian_currency_format }}</td>
+                        <td class="text-right pricing-columns">{{ item.amount|indian_currency_format }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Totals -->
+            <div class="totals-section">
+                <div class="totals-table">
+                    <div class="totals-row">
+                        <span class="totals-label">Sub Total:</span>
+                        <span class="totals-value">{{ invoice.subtotal|indian_currency_format }}</span>
+                    </div>
+                    {% if invoice.discount %}
+                    <div class="totals-row">
+                        <span class="totals-label">Discount:</span>
+                        <span class="totals-value">{{ invoice.discount|indian_currency_format }}</span>
+                    </div>
+                    {% endif %}
+                    {% if invoice.tax_amount %}
+                    <div class="totals-row">
+                        <span class="totals-label">VAT:</span>
+                        <span class="totals-value">{{ invoice.tax_amount|indian_currency_format }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="totals-row grand-total">
+                        <span class="totals-label">Grand Total:</span>
+                        <span class="totals-value">{{ invoice.net_total|indian_currency_format }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated on {{ now|date:"d M, Y" }}</p>
+        </div>
+    </div>
+</body>
+</html>

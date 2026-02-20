@@ -1,0 +1,377 @@
+# ============================================================================
+# PRINTCLOUD DOCKER COMPOSE - PRODUCTION ENVIRONMENT
+# ============================================================================
+# This file defines the production configuration for PrintCloud.
+#
+# Differences from development:
+# - Uses production build stages (optimized, minified code)
+# - Includes Nginx reverse proxy
+# - No source code volume mounts (code is baked into images)
+# - Production environment variables
+# - More restrictive configurations
+# - Health checks and restart policies
+#
+# USAGE:
+# docker-compose -f docker-compose.prod.yml up -d
+#
+# IMPORTANT: Before running in production:
+# 1. Change all default passwords in .env
+# 2. Set DEBUG=False
+# 3. Configure proper ALLOWED_HOSTS
+# 4. Set up SSL/HTTPS in nginx configuration
+# 5. Use managed databases (e.g., AWS RDS) instead of containers
+# 6. Configure proper backup strategy
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # POSTGRESQL DATABASE (Primary Database)
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: printcloud_postgres_prod
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-printcloud_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Set in .env - MUST be secure!
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # In production, you might not expose this port externally
+    # Only expose if you need direct database access
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Always restart unless manually stopped
+    restart: always
+
+  # ==========================================================================
+  # MYSQL DATABASE (Legacy Database)
+  # ==========================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: printcloud_mysql_prod
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Set in .env - MUST be secure!
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pressmanager_db}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}  # Set in .env - MUST be secure!
+      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+
+    command: --default-authentication-plugin=mysql_native_password
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    ports:
+      - "3306:3306"
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: always
+
+  # ==========================================================================
+  # REDIS (Celery Broker + Django Cache)
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: printcloud_redis_prod
+
+    # Use persistent storage in production
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis_data:/data
+
+    # Don't expose Redis port externally in production (security)
+    # Only accessible within Docker network
+    # ports:
+    #   - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: always
+
+  # ==========================================================================
+  # DJANGO BACKEND (Web Application)
+  # ==========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # Use the 'production' stage from multi-stage build
+      target: production
+
+    container_name: printcloud_backend_prod
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-printcloud_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pressmanager_db}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # Production settings
+      DEBUG: "False"
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}  # Set to your domain!
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+
+    # In production, only mount volumes for data (not source code)
+    volumes:
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+      - logs:/app/logs
+
+    # Don't expose backend port directly in production
+    # Nginx will proxy to it
+    expose:
+      - "8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    restart: always
+
+  # ==========================================================================
+  # CELERY WORKER (Background Tasks)
+  # ==========================================================================
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+
+    container_name: printcloud_celery_worker_prod
+
+    # Production: More workers for better performance
+    # Adjust based on your server's CPU cores
+    command: celery -A config.celery_app worker --loglevel=warning --concurrency=4
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-printcloud_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pressmanager_db}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DEBUG: "False"
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+
+    volumes:
+      - media_files:/app/media
+      - logs:/app/logs
+
+    depends_on:
+      - backend
+      - redis
+
+    restart: always
+
+  # ==========================================================================
+  # CELERY BEAT (Scheduled Tasks)
+  # ==========================================================================
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+
+    container_name: printcloud_celery_beat_prod
+
+    command: celery -A config.celery_app beat --loglevel=warning
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-printcloud_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pressmanager_db}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DEBUG: "False"
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+
+    volumes:
+      - logs:/app/logs
+
+    depends_on:
+      - backend
+      - redis
+
+    restart: always
+
+  # ==========================================================================
+  # NEXT.JS FRONTEND (Web UI)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Use the 'production' stage from multi-stage build
+      target: production
+
+    container_name: printcloud_frontend_prod
+
+    environment:
+      # In production, API calls should go through Nginx
+      # This is set to the Nginx URL, not directly to backend
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+      NODE_ENV: production
+
+    # No volume mounts in production (code is in the image)
+
+    # Don't expose frontend port directly
+    # Nginx will proxy to it
+    expose:
+      - "3000"
+
+    depends_on:
+      - backend
+
+    restart: always
+
+  # ==========================================================================
+  # NGINX REVERSE PROXY
+  # ==========================================================================
+  # Routes requests to appropriate services
+  # Serves static files directly for better performance
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+
+    container_name: printcloud_nginx_prod
+
+    # Mount volumes to serve static/media files
+    volumes:
+      - static_files:/app/staticfiles:ro  # :ro = read-only
+      - media_files:/app/media:ro
+
+    # Expose HTTP port (and HTTPS if configured)
+    ports:
+      - "80:80"
+      # Uncomment for HTTPS
+      # - "443:443"
+
+    depends_on:
+      - backend
+      - frontend
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    restart: always
+
+# ============================================================================
+# VOLUMES (Data Persistence)
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  media_files:
+    driver: local
+  static_files:
+    driver: local
+  logs:
+    driver: local
+
+# ============================================================================
+# PRODUCTION DEPLOYMENT CHECKLIST
+# ============================================================================
+# Before deploying to production:
+#
+# 1. SECURITY:
+#    □ Change all default passwords
+#    □ Set DEBUG=False
+#    □ Configure proper ALLOWED_HOSTS (your domain)
+#    □ Set up SSL/HTTPS certificates
+#    □ Review and restrict exposed ports
+#    □ Use secrets management (not .env files on server)
+#
+# 2. PERFORMANCE:
+#    □ Adjust Celery worker concurrency based on CPU
+#    □ Consider using managed databases (AWS RDS, etc.)
+#    □ Set up CDN for static files
+#    □ Configure caching properly
+#    □ Monitor resource usage
+#
+# 3. RELIABILITY:
+#    □ Set up automated backups for databases
+#    □ Configure log aggregation/monitoring
+#    □ Set up alerts for errors and downtime
+#    □ Test disaster recovery procedures
+#    □ Use health checks and monitoring tools
+#
+# 4. SCALABILITY:
+#    □ Consider load balancing if needed
+#    □ Plan for horizontal scaling
+#    □ Use cloud storage (S3) for media files
+#    □ Set up auto-scaling if on cloud platform
+#
+# 5. MAINTENANCE:
+#    □ Document deployment procedures
+#    □ Set up CI/CD pipeline
+#    □ Plan update strategy
+#    □ Keep dependencies up to date
+# ============================================================================

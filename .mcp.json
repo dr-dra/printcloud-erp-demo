@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "flowbite": {
+      "command": "/home/dharshana/.nvm/versions/node/v22.17.1/bin/flowbite-devkit",
+      "args": ["mcp", "--transport=stdio"],
+      "env": {
+        "PATH": "/home/dharshana/.nvm/versions/node/v22.17.1/bin:/usr/bin:/bin"
+      }
+    },
+    "postgres": {
+      "command": "/home/dharshana/.nvm/versions/node/v22.17.1/bin/npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@172.19.112.1:5432/printcloud_db"
+      ],
+      "env": {
+        "PATH": "/home/dharshana/.nvm/versions/node/v22.17.1/bin:/usr/bin:/bin"
+      }
+    },
+    "chrome-devtools": {
+      "command": "/home/dharshana/.nvm/versions/node/v22.17.1/bin/npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"],
+      "env": {
+        "PATH": "/home/dharshana/.nvm/versions/node/v22.17.1/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}

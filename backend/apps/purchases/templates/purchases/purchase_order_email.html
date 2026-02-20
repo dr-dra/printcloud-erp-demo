@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order #{{ purchase_order.po_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .email-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+
+        .company-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .order-info {
+            background-color: #e0f2fe;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #38bdf8;
+        }
+
+        .order-info h3 {
+            margin: 0 0 10px 0;
+            color: #0c4a6e;
+            font-size: 18px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #bae6fd;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #0c4a6e;
+        }
+
+        .info-value {
+            color: #075985;
+        }
+
+        .message-content {
+            background-color: white;
+            padding: 20px 0;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .attachment-notice {
+            background-color: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .attachment-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">Kandy Offset Printers Ltd</div>
+            <div class="company-info">
+                No. 947 Peradeniya Road Kandy<br>
+                0814946426 • info@printsrilanka.com • kandyoffset.com
+            </div>
+        </div>
+
+        <div class="message-content">{{ message|safe }}</div>
+
+        <div class="order-info">
+            <h3>Purchase Order Details</h3>
+            <div class="info-row">
+                <span class="info-label">PO Number:</span>
+                <span class="info-value">#{{ purchase_order.po_number }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Order Date:</span>
+                <span class="info-value">{{ purchase_order.order_date|date:"F d, Y" }}</span>
+            </div>
+            {% if purchase_order.expected_delivery_date %}
+            <div class="info-row">
+                <span class="info-label">Expected Delivery:</span>
+                <span class="info-value">{{ purchase_order.expected_delivery_date|date:"F d, Y" }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span class="info-label">Total Amount:</span>
+                <span class="info-value">Rs. {{ purchase_order.total|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div class="attachment-notice">
+            <span class="attachment-icon">📎</span>
+            <strong>Attachment:</strong> Purchase-Order-{{ purchase_order.po_number }}.pdf has been attached to this email.
+        </div>
+
+        <div class="footer">
+            <p>
+                This email was sent from Kandy Offset Printers (Pvt) Ltd.<br>
+                For any questions or concerns, please contact us at 081 4946 426 or reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

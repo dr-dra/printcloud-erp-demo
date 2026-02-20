@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Ensure Montserrat is used as the primary font */
+* {
+  font-family:
+    var(--font-montserrat),
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    sans-serif !important;
+}
+
+/* Try multiple selectors to target Flowbite React datepicker */
+.datepicker {
+  font-size: 0.75rem !important;
+}
+
+/* Try targeting by data attributes that Flowbite might use */
+[data-testid*='datepicker'] {
+  font-size: 0.75rem !important;
+}
+
+[data-testid*='datepicker'] * {
+  font-size: 0.75rem !important;
+}
+
+/* Try targeting absolute positioned elements (likely the popup) */
+div[class*='absolute'][class*='z-'] {
+  font-size: 0.75rem !important;
+}
+
+/* Target common Tailwind classes that might be used */
+.bg-white.shadow-lg {
+  font-size: 0.75rem !important;
+}
+
+.bg-white.shadow-lg * {
+  font-size: 0.75rem !important;
+}
+
+/* Try targeting by common calendar structure */
+table tbody tr td {
+  font-size: 0.75rem !important;
+}
+
+table thead tr th {
+  font-size: 0.75rem !important;
+}
+
+/* Very broad approach - target any high z-index popup */
+div[style*='z-index: 50'],
+div[style*='z-index: 100'],
+div[style*='z-index: 999'] {
+  font-size: 0.75rem !important;
+}
+
+div[style*='z-index: 50'] *,
+div[style*='z-index: 100'] *,
+div[style*='z-index: 999'] * {
+  font-size: 0.75rem !important;
+}
+
+/* Try targeting Flowbite specific classes */
+.flowbite-datepicker,
+[class*='flowbite'] {
+  font-size: 0.75rem !important;
+}
+
+.flowbite-datepicker *,
+[class*='flowbite'] * {
+  font-size: 0.75rem !important;
+}
+
+/* Make datepicker inputs wider */
+.datepicker-wrapper {
+  width: 110%; /* 10% additional width */
+}
+
+.datepicker-wrapper input {
+  width: 100% !important;
+  min-width: 120px !important; /* Ensure minimum width */
+}
+
+/* Alternative approach - target flowbite datepicker inputs directly */
+.compact-datepicker input[type='text'] {
+  width: 110% !important;
+  min-width: 120px !important;
+}
+
+/* Prevent datepicker dropdown from causing horizontal scroll */
+.compact-datepicker {
+  position: relative;
+}
+
+/* Ensure datepicker popups don't extend beyond viewport */
+div[class*='absolute'][class*='z-'] {
+  max-width: calc(100vw - 2rem) !important;
+  left: auto !important;
+  right: 0 !important;
+  transform: none !important;
+}
+
+/* Custom Rich Text Editor Styling for Email Modal */
+.email-modal [contenteditable] {
+  caret-color: #374151;
+}
+
+.dark .email-modal [contenteditable] {
+  caret-color: #f3f4f6;
+}
+
+.email-modal [contenteditable]:empty::before {
+  content: 'Compose your message...';
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.dark .email-modal [contenteditable]:empty::before {
+  color: #6b7280;
+}
+
+.email-modal [contenteditable] ul,
+.email-modal [contenteditable] ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.email-modal [contenteditable] li {
+  margin: 2px 0;
+}
+
+.email-modal [contenteditable] p {
+  margin: 4px 0;
+}
+
+.email-modal [contenteditable] br {
+  line-height: 1.4;
+}
+
+/* TypeaheadInput dropdown - override datepicker font size rules */
+.typeahead-dropdown.bg-white.shadow-lg .typeahead-secondary.size-text {
+  font-size: 10px !important;
+}
+
+.typeahead-dropdown.bg-white.shadow-lg .typeahead-secondary:not(.size-text) {
+  font-size: 10px !important;
+}
+
+/* Row highlight animation for newly created rows - Light Mode */
+@keyframes fadeOutBackgroundLight {
+  0% {
+    background-color: #dcfce7; /* Very pale green */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Row highlight animation for newly created rows - Dark Mode */
+@keyframes fadeOutBackgroundDark {
+  0% {
+    background-color: rgba(16, 185, 129, 0.15); /* Subtle green tint with transparency */
+    border-left: 3px solid rgba(16, 185, 129, 0.6); /* Green left border */
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3); /* Subtle inner glow */
+  }
+  100% {
+    background-color: transparent;
+    border-left: 3px solid transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+/* Light mode - apply light animation */
+.animate-fade-out-bg {
+  animation: fadeOutBackgroundLight 2.5s ease-out forwards;
+}
+
+/* Dark mode - apply dark animation */
+.dark .animate-fade-out-bg {
+  animation: fadeOutBackgroundDark 2.5s ease-out forwards;
+}
+
+/* Thin Custom Scrollbar Styles */
+.thin-scrollbar {
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #d1d5db transparent; /* thumb track - light mode */
+}
+
+.dark .thin-scrollbar {
+  scrollbar-color: #4b5563 transparent; /* thumb track - dark mode */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* gray-300 - light mode */
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* gray-400 - light mode hover */
+}
+
+/* Dark mode scrollbar */
+.dark .thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4b5563; /* gray-600 - dark mode */
+}
+
+.dark .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280; /* gray-500 - dark mode hover */
+}
+
+/* Reduced Motion Support for Sidebar Animations */
+@media (prefers-reduced-motion: reduce) {
+  .panel-transition {
+    transition-duration: 0ms !important;
+  }
+}

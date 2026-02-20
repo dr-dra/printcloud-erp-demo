@@ -1,0 +1,394 @@
+# ============================================================================
+# PRINTCLOUD DOCKER COMPOSE - DEVELOPMENT ENVIRONMENT
+# ============================================================================
+# This file defines all the services (containers) needed to run PrintCloud.
+#
+# What is Docker Compose?
+# - A tool for defining and running multi-container Docker applications
+# - Uses a YAML file to configure all services
+# - Single command (docker-compose up) starts everything
+#
+# What is a service?
+# - A container running a specific piece of software
+# - Examples: database, backend, frontend, etc.
+# - Services can talk to each other using service names
+#
+# QUICK START:
+# 1. Copy .env.example to .env and configure it
+# 2. Run: docker-compose up
+# 3. Access frontend at http://localhost:3000
+# 4. Access backend at http://localhost:8000
+# ============================================================================
+
+version: '3.8'
+
+# ============================================================================
+# SERVICES DEFINITION
+# ============================================================================
+services:
+  # ==========================================================================
+  # POSTGRESQL DATABASE (Primary Database)
+  # ==========================================================================
+  # This stores all main application data (users, customers, quotations, etc.)
+  postgres:
+    # Use official PostgreSQL image
+    image: postgres:15-alpine
+
+    # Container name (easier to reference than auto-generated names)
+    container_name: printcloud_postgres
+
+    # Environment variables for PostgreSQL
+    environment:
+      # Default database, user, and password
+      # These should match your DATABASE_URL in .env
+      POSTGRES_DB: printcloud_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+
+    # Volume for data persistence
+    # Without this, data is lost when container stops!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # Expose PostgreSQL port
+    # 5432 is the default PostgreSQL port
+    ports:
+      - "5432:5432"
+
+    # Health check to ensure database is ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Restart policy
+    restart: unless-stopped
+
+  # ==========================================================================
+  # MYSQL DATABASE (Legacy Database)
+  # ==========================================================================
+  # This is for the old pressmanager_db data
+  mysql:
+    # Use official MySQL image
+    image: mysql:8.0
+
+    container_name: printcloud_mysql
+
+    # Environment variables for MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+      MYSQL_DATABASE: pressmanager_db
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql123
+      # MySQL 8.0 uses caching_sha2_password by default
+      # Change to mysql_native_password for compatibility with PyMySQL
+      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+
+    # MySQL configuration to use native password authentication
+    command: --default-authentication-plugin=mysql_native_password
+
+    # Volume for data persistence
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    # Expose MySQL port
+    ports:
+      - "3306:3306"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+  # ==========================================================================
+  # REDIS (Celery Broker + Django Cache)
+  # ==========================================================================
+  # Redis is an in-memory data store used for:
+  # 1. Celery message broker (queuing background tasks)
+  # 2. Django cache backend (caching data for performance)
+  redis:
+    # Use official Redis Alpine image (smaller size)
+    image: redis:7-alpine
+
+    container_name: printcloud_redis
+
+    # Redis doesn't need environment variables for basic setup
+
+    # Volume for data persistence (optional for development)
+    volumes:
+      - redis_data:/data
+
+    # Expose Redis port
+    ports:
+      - "6379:6379"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+  # ==========================================================================
+  # DJANGO BACKEND (Web Application)
+  # ==========================================================================
+  backend:
+    # Build from our custom Dockerfile
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # Use the 'development' stage from multi-stage build
+      target: development
+
+    container_name: printcloud_backend
+
+    # Command to run (overrides Dockerfile CMD)
+    # Wait for database to be ready, then run migrations, then start server
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL...' &&
+        while ! nc -z postgres 5432; do sleep 1; done &&
+        echo 'PostgreSQL is ready!' &&
+        echo 'Running migrations...' &&
+        python manage.py migrate --noinput &&
+        echo 'Starting Daphne ASGI server...' &&
+        daphne -b 0.0.0.0 -p 8000 config.asgi:application
+      "
+
+    # Environment variables from .env file
+    # Docker Compose automatically loads .env from the same directory
+    env_file:
+      - ./backend/.env
+
+    # Additional environment variables (override .env if needed)
+    environment:
+      # Database connection (using service name 'postgres')
+      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/printcloud_db
+      # Redis connection (using service name 'redis')
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      # MySQL legacy database (using service name 'mysql')
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: pressmanager_db
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql123
+      # Debug mode for development
+      DEBUG: "True"
+      # Allow connections from any host (needed for Docker)
+      ALLOWED_HOSTS: "*"
+      # Frontend URL
+      FRONTEND_URL: http://localhost:3000
+
+    # Volume mounts
+    # Mount source code for hot-reload (changes appear instantly!)
+    volumes:
+      - ./backend:/app
+      # Named volumes for persistence
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+      - logs:/app/logs
+
+    # Expose backend port
+    ports:
+      - "8000:8000"
+
+    # Dependencies
+    # Backend depends on these services being healthy
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    restart: unless-stopped
+
+  # ==========================================================================
+  # CELERY WORKER (Background Tasks)
+  # ==========================================================================
+  # Processes background tasks like sending emails and creating print jobs
+  celery_worker:
+    # Use the same image as backend (same code, different command)
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+
+    container_name: printcloud_celery_worker
+
+    # Command to start Celery worker
+    # --loglevel=info: Show informational messages
+    # --concurrency=2: Run 2 worker processes (adjust based on CPU)
+    command: python -m celery -A config.celery_app worker --loglevel=info --concurrency=2
+
+
+    # Same environment as backend
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/printcloud_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: pressmanager_db
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql123
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      FRONTEND_URL: http://localhost:3000
+
+    # Mount source code (same as backend)
+    volumes:
+      - ./backend:/app
+      - media_files:/app/media
+      - logs:/app/logs
+
+    # Celery worker depends on backend and Redis
+    depends_on:
+      - backend
+      - redis
+
+    restart: unless-stopped
+
+  # ==========================================================================
+  # CELERY BEAT (Scheduled Tasks)
+  # ==========================================================================
+  # Runs periodic tasks on a schedule (e.g., process reminders every 30 min)
+  celery_beat:
+    # Use the same image as backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+
+    container_name: printcloud_celery_beat
+
+    # Command to start Celery beat
+    command: python -m celery -A config.celery_app beat --loglevel=info
+
+
+    # Same environment as backend
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/printcloud_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      ENABLE_MYSQL_LEGACY: "True"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: pressmanager_db
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql123
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      FRONTEND_URL: http://localhost:3000
+
+    # Mount source code
+    volumes:
+      - ./backend:/app
+      - logs:/app/logs
+
+    # Celery beat depends on backend and Redis
+    depends_on:
+      - backend
+      - redis
+
+    restart: unless-stopped
+
+  # ==========================================================================
+  # NEXT.JS FRONTEND (Web UI)
+  # ==========================================================================
+  frontend:
+    # Build from our custom Dockerfile
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Use the 'development' stage from multi-stage build
+      target: development
+
+    container_name: printcloud_frontend
+
+    # Environment variables
+    environment:
+      # API URL points to backend service
+      # Using service name 'backend' - Docker DNS resolves this
+      # But we also need to make it work from browser (localhost:8000)
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+      NODE_ENV: development
+
+    # Volume mounts for hot-reload
+    # Mount source code so changes appear instantly!
+    volumes:
+      - ./frontend:/app
+      # Prevent node_modules from being overridden by mount
+      - /app/node_modules
+      - /app/.next
+
+    # Expose frontend port
+    ports:
+      - "3000:3000"
+
+    # Frontend depends on backend being ready
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+# ============================================================================
+# VOLUMES (Data Persistence)
+# ============================================================================
+# Named volumes store data outside containers so it persists
+# Even when containers are stopped or recreated, data remains!
+volumes:
+  # Database data
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+
+  # Redis data
+  redis_data:
+    driver: local
+
+  # Application data
+  media_files:
+    driver: local
+  static_files:
+    driver: local
+  logs:
+    driver: local
+
+# ============================================================================
+# NETWORKS (Optional - Docker creates a default network automatically)
+# ============================================================================
+# All services are on the same network and can communicate using service names
+# Example: backend can reach postgres at 'postgres:5432'
+# No need to define a custom network for basic setup

@@ -1,0 +1,6 @@
+account_code,amount,description
+1000,25000,Cash in Hand
+1010,150000,Bank Current Account
+1100,80000,Accounts Receivable
+2000,45000,Accounts Payable
+1200,60000,Inventory Opening Balance

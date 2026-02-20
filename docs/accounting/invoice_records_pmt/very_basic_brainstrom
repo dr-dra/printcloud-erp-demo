@@ -1,0 +1,247 @@
+1) What “Record Payment” must do (accounting rules)
+
+When a payment is recorded against an invoice, the system must:
+
+Create a Payment record (business object)
+
+Allocate payment to invoice (update invoice paid/balance status)
+
+Create a Journal Entry automatically (double-entry)
+
+Journal mapping (Phase-1)
+
+Cash payment
+
+DR 1000 Cash in Hand
+
+CR 1100 Accounts Receivable
+
+Bank transfer / card
+
+DR 1010 Bank
+
+CR 1100 AR
+
+Cheque received (not cleared yet)
+
+DR Cheques Received / Undeposited (you may need a new asset account)
+
+CR 1100 AR
+
+Cheque cleared / deposited
+
+DR 1010 Bank
+
+CR Cheques Received / Undeposited
+
+Note: Your current COA has “Cheques Issued - Pending Clearance” (liability) which is for outgoing cheques. For incoming cheques, you want an asset account like 1040 Cheques Received / Undeposited Funds.
+
+2) UI: How Record Payment screen should look
+
+Keep it one modal or page reachable from invoice view, but also usable standalone later.
+
+A) Header (read-only context)
+
+Invoice No
+
+Customer
+
+Invoice Total
+
+Balance Due
+
+Invoice Date / Due Date
+
+B) Payment entry section (editable)
+
+Fields:
+
+Payment Date/Time (default now)
+
+Amount (default = balance due, editable)
+
+Payment Method (dropdown)
+
+Cash
+
+Bank Transfer
+
+Cheque
+
+Card
+
+Other
+
+Deposit To / Account (dropdown, depends on method)
+
+Cash → defaults to 1000
+
+Bank/Card/Transfer → defaults to 1010
+
+Cheque → defaults to Cheques Received / Undeposited
+
+Reference No (transaction id, slip no, bank ref) (optional)
+
+Notes (optional)
+
+Attachment upload (optional) (receipt scan, bank slip)
+
+C) Allocation (important for future)
+
+For now (Phase-1):
+
+Allocation is 100% to this invoice automatically.
+
+Later:
+
+“Allocate payment across multiple invoices” mode.
+
+D) Summary & actions
+
+New balance after payment (preview)
+
+Buttons:
+
+Save Payment
+
+Save & Print Receipt (optional)
+
+Cancel
+
+3) DB table design (clean and scalable)
+
+You likely already have something like InvoicePayment. If not, create:
+
+sales_invoice_payment
+
+Core fields:
+
+id
+
+invoice_id (FK)
+
+payment_date (datetime)
+
+amount (decimal)
+
+payment_method (enum)
+
+deposit_account_id (FK → ChartOfAccounts) ✅ important
+
+reference_number (string, nullable)
+
+notes (text, nullable)
+
+attachment (file, nullable)
+
+created_by, created_at
+
+Accounting link fields:
+
+journal_entry_id (FK → JournalEntry, nullable but should be filled)
+
+status (posted/voided) or is_void boolean
+
+void_reason, voided_by, voided_at (optional but very useful)
+
+Invoice fields (existing)
+
+Keep:
+
+total
+
+amount_paid (optional cached)
+
+balance_due
+
+status (unpaid/partial/paid)
+
+Source of truth should be payments + journals, but caching amount_paid/balance_due is fine if updated consistently.
+
+4) Workflow (what happens on Save)
+
+When user clicks Save Payment:
+
+Validate:
+
+amount > 0
+
+amount ≤ balance_due (or allow overpayment later)
+
+fiscal period open
+
+correct deposit account for method
+
+Create payment row
+
+Update invoice paid/balance/status
+
+Create journal entry using JournalEngine:
+
+source_type = invoice_payment
+
+source_id = payment.id
+
+Lines = DR deposit account, CR AR
+
+Store journal_entry_id in payment
+
+5) Quick note about overpayments (don’t block now)
+
+Phase-1 simplest:
+
+Disallow payment > balance due.
+
+Phase-1.5:
+
+Allow and store extra as Customer Advances (2100):
+
+DR Cash/Bank
+
+CR Customer Advances
+
+What to build first (order)
+
+Add deposit_account_id to payment model
+
+Implement API endpoint: POST /api/sales/invoices/{id}/payments/
+
+Wire invoice page “Record Payment” modal/page
+
+Auto-create journal entry
+
+
+//////////////////
+5. Payment Method Tracking
+Every payment must record:
+Cash
+Bank Transfer
+Cheque
+Card / POS
+
+6. Cheque Status (Received → Cleared → Bounced)
+Cheque Received (undeposited)
+Cheque Cleared (moves to bank)
+Cheque bounced handling
+
+7. Credit Notes
+Printing reality:
+- Job cancelled
+- Quantity reduced
+- Reprint mistake
+Phase 1 Credit note:
+- Linked to invoice
+- Reduces AR
+- Can create customer credit / advance
+
+Without this: Staff will do refunds manually, Accounting breaks
+
+8. Opening AR Balance Support
+Since we chose: “No historical migration”
+We must support:
+Opening unpaid invoices
+Opening customer balances
+
+How:
+Manual “Opening Balance” journal
+Optional mapping of old invoices (read-only)

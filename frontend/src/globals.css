@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
+    rgb(var(--background-start-rgb));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* 
+  Custom Global Styles for Flowbite Component Fixes
+*/
+
+/* 1. Dark Mode Modal Background Fix */
+/* Makes the modal background darker for better contrast */
+.dark [role='dialog'] > div {
+  background-color: #1f2937 !important;
+  /* Tailwind's gray-800 */
+}
+
+/* 2. Datepicker Tab Navigation Fix */
+/* Prevents calendar dates from being tabbable to improve form navigation */
+.datepicker-picker span {
+  tab-index: -1 !important;
+  pointer-events: auto !important;
+}
+
+.datepicker-picker span:focus {
+  outline: none !important;
+}
+
+/* 3. Datepicker Calendar Hiding Fix */
+/* Ensures calendar hides when tabbing away */
+.datepicker-dropdown,
+.datepicker-picker,
+[data-datepicker],
+[class*='datepicker'],
+[class*='calendar'] {
+  z-index: 9999 !important;
+}
+
+/* Hide all datepicker elements when not focused */
+.datepicker-dropdown:not(:focus-within),
+.datepicker-picker:not(:focus-within),
+[data-datepicker]:not(:focus-within),
+[class*='datepicker']:not(:focus-within),
+[class*='calendar']:not(:focus-within) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Additional selectors for Flowbite datepicker */
+[role='dialog']:has(.datepicker-picker):not(:focus-within),
+.popover:has(.datepicker-picker):not(:focus-within),
+[role='dialog']:has([class*='datepicker']):not(:focus-within),
+.popover:has([class*='datepicker']):not(:focus-within) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Force hide on tab navigation */
+body:not(:focus-within [class*='datepicker']) [class*='datepicker'],
+body:not(:focus-within [class*='calendar']) [class*='calendar'] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 2. Datepicker-in-Modal Fix */
+/* Ensures the calendar appears above the modal and is fully visible */
+.datepicker-dropdown {
+  z-index: 9999 !important;
+}
+
+.dark .datepicker-picker {
+  background-color: #374151;
+  /* gray-700 */
+}
+
+.dark .datepicker-picker span {
+  color: #d1d5db;
+  /* gray-300 */
+}
+
+.dark .datepicker-picker span.focused,
+.dark .datepicker-picker span:hover {
+  background-color: #4b5563;
+  /* gray-600 */
+}
+
+.dark .datepicker-picker span.selected {
+  background-color: #3b82f6 !important;
+  /* blue-500 */
+  color: #ffffff !important;
+}

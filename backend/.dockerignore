@@ -1,0 +1,89 @@
+# ============================================================================
+# BACKEND .DOCKERIGNORE
+# ============================================================================
+# This file tells Docker which files/folders to IGNORE when building the image.
+# Similar to .gitignore, but for Docker builds.
+#
+# Why is this important?
+# - Smaller image sizes (faster builds and deployments)
+# - Faster build times (less data to copy)
+# - Security (don't include sensitive files in images)
+# ============================================================================
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Django stuff
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Environment variables (contains secrets!)
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Documentation
+*.md
+docs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker files (don't need these inside the container)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Media and static files (these will be mounted as volumes)
+media/
+staticfiles/
+
+# Logs directory (will be mounted as volume)
+logs/
+
+# Celery beat schedule
+celerybeat-schedule
+celerybeat.pid
+
+# Database files (if any)
+*.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS files
+Thumbs.db
+.DS_Store

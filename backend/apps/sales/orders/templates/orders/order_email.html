@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order #{{ order.order_number }}{% if order.project_name %} ({{ order.project_name }}){% endif %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        
+        .email-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        
+        .company-info {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .message-content {
+            background-color: white;
+            padding: 20px 0;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        .attachment-notice {
+            background-color: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .attachment-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Kandy Offset Printers Ltd</div>
+            <div class="company-info">
+                No. 947 Peradeniya Road Kandy<br>
+                0814946426 • info@printsrilanka.com • kandyoffset.com
+            </div>
+        </div>
+
+        <!-- Message Content -->
+        <div class="message-content">{{ message|safe }}</div>        
+        
+        <!-- Attachment Notice -->
+        <div class="attachment-notice">
+            <span class="attachment-icon">📎</span>
+            <strong>Attachment:</strong> Order-{{ order.order_number }}{% if order.project_name %} ({{ order.project_name }}){% endif %}.pdf has been attached to this email.
+            {% if share_url %}
+                <br><br>
+                Or you can visit: <a href="{{ share_url }}" target="_blank" style="color: #2563eb; text-decoration: none;">{{ share_url }}</a> to view the order online.
+            {% endif %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                This email was sent from Kandy Offset Printers (Pvt) Ltd.<br>
+                For any questions or concerns, please contact us at 081 4946 426 or reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

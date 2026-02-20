@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order {{ purchase_order.po_number }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 12.7mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #000000;
+            background: white;
+            width: 185mm;
+            min-height: 297mm;
+        }
+
+        .container {
+            width: 100%;
+            min-height: 297mm;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .content {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8mm;
+            border-bottom: 1pt solid #e5e7eb;
+            padding-bottom: 5mm;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 3px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .header-left .po-number {
+            font-size: 16px;
+            font-weight: 400;
+            color: #000000;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .company-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 8px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .company-info {
+            font-size: 12px;
+            color: #000000;
+            line-height: 1.5;
+        }
+
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8mm;
+        }
+
+        .supplier-details,
+        .order-details {
+            flex: 1;
+        }
+
+        .order-details {
+            text-align: right;
+        }
+
+        .details-section h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .details-section p {
+            font-size: 12px;
+            color: #000000;
+            margin-bottom: 2px;
+        }
+
+        .items-section {
+            margin-bottom: 8mm;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5mm;
+        }
+
+        .items-table thead {
+            background-color: #f3f4f6;
+            border-bottom: 1pt solid #d1d5db;
+        }
+
+        .items-table th {
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #000000;
+            border: none;
+        }
+
+        .items-table th.right {
+            text-align: right;
+        }
+
+        .items-table tbody tr {
+            border-bottom: 1pt solid #e5e7eb;
+        }
+
+        .items-table td {
+            padding: 8px;
+            font-size: 12px;
+            color: #000000;
+            border: none;
+        }
+
+        .items-table td.right {
+            text-align: right;
+        }
+
+        .items-table tbody tr:last-child {
+            border-bottom: 2pt solid #000000;
+        }
+
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8mm;
+        }
+
+        .totals-box {
+            width: 40%;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            color: #000000;
+        }
+
+        .total-row.final {
+            border-top: 1pt solid #000000;
+            font-weight: 600;
+            font-size: 14px;
+            padding-top: 6px;
+            margin-top: 4px;
+        }
+
+        .notes-section {
+            margin-bottom: 8mm;
+            padding-top: 5mm;
+            border-top: 1pt solid #e5e7eb;
+        }
+
+        .notes-section h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+        }
+
+        .notes-section p {
+            font-size: 12px;
+            color: #000000;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .footer {
+            text-align: center;
+            border-top: 1pt solid #e5e7eb;
+            padding-top: 5mm;
+            font-size: 11px;
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="header">
+                <div class="header-left">
+                    <h1>PURCHASE ORDER</h1>
+                    <div class="po-number">#{{ purchase_order.po_number }}</div>
+                </div>
+                <div class="header-right">
+                    <div class="company-name">PrintCloud</div>
+                    <div class="company-info">
+                        <p>www.printcloud.lk</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <div class="supplier-details">
+                    <h3>Supplier</h3>
+                    <p><strong>{{ purchase_order.supplier.name }}</strong></p>
+                    {% if purchase_order.supplier.email %}
+                    <p>{{ purchase_order.supplier.email }}</p>
+                    {% endif %}
+                    {% if purchase_order.supplier.phone %}
+                    <p>{{ purchase_order.supplier.phone }}</p>
+                    {% endif %}
+                    {% if purchase_order.delivery_address %}
+                    <p>{{ purchase_order.delivery_address }}</p>
+                    {% endif %}
+                </div>
+                <div class="order-details">
+                    <h3>Order Details</h3>
+                    <p><strong>Order Date:</strong> {{ purchase_order.order_date|date:"d M, Y" }}</p>
+                    {% if purchase_order.expected_delivery_date %}
+                    <p><strong>Expected Delivery:</strong> {{ purchase_order.expected_delivery_date|date:"d M, Y" }}</p>
+                    {% endif %}
+                    <p><strong>Status:</strong> {{ purchase_order.get_status_display }}</p>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Item Description</th>
+                            <th class="right">Quantity</th>
+                            <th class="right">Unit Price</th>
+                            <th class="right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.item_name }}</strong>
+                                {% if item.description %}
+                                <br><small>{{ item.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="right">{{ item.quantity }}</td>
+                            <td class="right">Rs. {{ item.unit_price|floatformat:2 }}</td>
+                            <td class="right">Rs. {{ item.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="totals-section">
+                <div class="totals-box">
+                    <div class="total-row">
+                        <span>Subtotal:</span>
+                        <span>Rs. {{ purchase_order.subtotal|floatformat:2 }}</span>
+                    </div>
+                    {% if purchase_order.tax_amount %}
+                    <div class="total-row">
+                        <span>Tax:</span>
+                        <span>Rs. {{ purchase_order.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if purchase_order.discount_amount %}
+                    <div class="total-row">
+                        <span>Discount:</span>
+                        <span>-Rs. {{ purchase_order.discount_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="total-row final">
+                        <span>Total:</span>
+                        <span>Rs. {{ purchase_order.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if purchase_order.notes or purchase_order.supplier_notes %}
+            <div class="notes-section">
+                {% if purchase_order.notes %}
+                <h3>Internal Notes</h3>
+                <p>{{ purchase_order.notes }}</p>
+                {% endif %}
+                {% if purchase_order.supplier_notes %}
+                <h3>Supplier Notes</h3>
+                <p>{{ purchase_order.supplier_notes }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            <p>Generated on {{ now|date:"d M, Y" }}</p>
+        </div>
+    </div>
+</body>
+</html>

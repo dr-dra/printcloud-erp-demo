@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page { size: A5 landscape; margin: 16mm 10mm 24mm 10mm; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
+    .header { display: flex; justify-content: space-between; align-items: center; }
+    .logo img { height: 40px; }
+    .title { text-align: right; }
+    .title h1 { margin: 0; font-size: 20px; }
+    .company { margin-top: 6px; font-size: 11px; }
+    .box { border: 1px solid #ddd; padding: 8px; border-radius: 6px; }
+    .row { display: flex; justify-content: space-between; gap: 10px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .label { color: #666; font-size: 10px; }
+    .value { font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { padding: 6px 4px; border-bottom: 1px solid #eee; text-align: left; }
+    th { font-size: 10px; color: #666; }
+    .amount { text-align: right; }
+    .footer-note { margin-top: 16px; font-size: 10px; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      {% if logo_url %}<img src="{{ logo_url }}" alt="Logo" />{% endif %}
+    </div>
+    <div class="title">
+      <h1>Credit Note</h1>
+      <div class="label">Credit Note #</div>
+      <div class="value">{{ credit_note.credit_note_number }}</div>
+    </div>
+  </div>
+
+  {% if include_company_details %}
+  <div class="company">
+    <div class="value">{{ company.name }}</div>
+    <div>{{ company.address }}</div>
+    <div>{{ company.phone }} | {{ company.email }}</div>
+  </div>
+  {% endif %}
+
+  <div class="row mt-12">
+    <div class="box" style="flex:1;">
+      <div class="label">Customer</div>
+      <div class="value">{{ credit_note.customer.name }}</div>
+      {% if credit_note.customer.email %}<div>{{ credit_note.customer.email }}</div>{% endif %}
+      {% if credit_note.customer.contact %}<div>{{ credit_note.customer.contact }}</div>{% endif %}
+    </div>
+    <div class="box" style="flex:1;">
+      <div class="label">Date</div>
+      <div class="value">{{ credit_note.credit_note_date }}</div>
+      {% if credit_note.invoice %}
+      <div class="label mt-8">Invoice</div>
+      <div class="value">{{ credit_note.invoice.invoice_number }}</div>
+      {% endif %}
+      {% if credit_note.order %}
+      <div class="label mt-8">Order</div>
+      <div class="value">{{ credit_note.order.order_number }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          {{ credit_note.get_reason_display }}
+          {% if credit_note.detail_note %}
+          <div class="label">{{ credit_note.detail_note }}</div>
+          {% endif %}
+        </td>
+        <td class="amount">Rs. {{ credit_note.amount }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {% if credit_note.payout_method %}
+  <div class="box mt-12">
+    <div class="label">Payout Method</div>
+    <div class="value">{{ credit_note.get_payout_method_display }}</div>
+    {% if credit_note.payout_account %}
+    <div class="label mt-8">Payout Account</div>
+    <div class="value">{{ credit_note.payout_account.account_code }} - {{ credit_note.payout_account.account_name }}</div>
+    {% endif %}
+    {% if credit_note.payout_voucher_number %}
+    <div class="label mt-8">Voucher #</div>
+    <div class="value">{{ credit_note.payout_voucher_number }}</div>
+    {% endif %}
+    {% if credit_note.payout_cheque_number %}
+    <div class="label mt-8">Cheque #</div>
+    <div class="value">{{ credit_note.payout_cheque_number }}</div>
+    {% endif %}
+    {% if credit_note.payout_method == 'bank_transfer' %}
+    <div class="label mt-8">Customer Bank</div>
+    <div class="value">{{ credit_note.customer_bank_name }}</div>
+    <div class="label mt-8">Account Name</div>
+    <div class="value">{{ credit_note.customer_bank_account_name }}</div>
+    <div class="label mt-8">Account Number</div>
+    <div class="value">{{ credit_note.customer_bank_account_number }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="footer-note">This is a computer-generated credit note.</div>
+</body>
+</html>

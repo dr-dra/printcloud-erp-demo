@@ -1,0 +1,47 @@
+# Compiled Python files
+*.pyc
+__pycache__/
+
+# Environment files
+.env
+
+# Text and Markdown files
+*.txt
+*.md
+!conductor/**/*.md
+
+# Specific backend folders/files
+backend/customer-files/
+backend/customer_documents/
+
+# SQLite database files
+*.sqlite3
+db.sqlite3
+
+# Deployment scripts
+deploy_to_vps.sh
+
+# Design files and old frontend folders
+design-files/
+.documents/
+.cursor/
+.claude/
+.gemini/
+prompts/
+frontend-old/
+node_modules
+new_venv/
+venv/
+.env/
+__pycache__/
+logs/
+backend/.venv/
+.aider*
+
+# .NET build outputs
+printcloudclient/bin/
+printcloudclient/obj/
+backend/.env
+frontend/.env.local
+eval "$(ssh-agent -s)"*
+backend/.env.bedrock_update

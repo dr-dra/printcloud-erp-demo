@@ -1,0 +1,510 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotation {{ quotation.quot_number }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Medium.ttf') format('truetype');
+            font-weight: 500;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Inter Tight';
+            src: url('file:///home/dharshana/projects/printcloud/backend/apps/sales/quotations/static/fonts/InterTight-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        @page {
+            size: A4;
+            margin: 12.7mm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #000000;
+            background: white;
+            width: 185mm;
+            /* 4cm top margin for letterhead */
+            padding-top: 2cm;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+        
+        /* Header - No logo, no company info for letterhead */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8mm;
+            border-bottom: 1pt solid #e5e7eb;
+            padding-bottom: 5mm;
+        }
+        
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 3px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+        
+        .header-left .quotation-number {
+            font-size: 16px;
+            font-weight: 400;
+            color: #000000;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+        
+        .header-right {
+            text-align: right;
+        }
+        
+        /* Customer and Project Details */
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8mm;
+        }
+        
+        .customer-details {
+            flex: 1;
+        }
+        
+        .date-details {
+            flex: 1;
+            text-align: right;
+        }
+        
+        .details-section h3 {
+            font-weight: 300;
+            color: #000000;
+            margin-bottom: 6px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12px;
+        }
+        
+        .details-section .customer-name {
+            font-weight: 600;
+            color: #070707;
+            margin-bottom: 1px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 13px;
+        }
+        
+        .details-section .customer-email {
+            color: #000000;
+            font-size: 12px;
+        }
+        
+        .details-section .customer-address {
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        
+        .details-section .customer-contact {
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        
+        .prepared-by {
+            margin-bottom: 16px;
+        }
+        
+        .prepared-label {
+            font-weight: 300;
+            color: #000000;
+            font-size: 12px;
+            margin-bottom: 2px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+        
+        .prepared-contact {
+            color: #000000;
+            font-size: 11px;
+        }
+        
+        .dates-inline {
+            text-align: right;
+        }
+        
+        .date-item {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .date-label {
+            font-weight: 300;
+            color: #000000;
+            margin-right: 8px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+        }
+        
+        .date-value {
+            font-weight: 400;
+            color: #000000;
+        }
+        
+        /* Project Section */
+        .project-section {
+            margin-bottom: 5mm;
+        }
+        
+        .project-section h3 {
+            font-weight: 300;
+            color: #000000;
+            margin-bottom: 2px;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12px;
+        }
+        
+        .project-description {
+            color: #000000;
+            font-size: 14px;
+        }
+        
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8mm;
+            border-top: 0.5pt solid #d1d5db;
+            border-bottom: 0.5pt solid #d1d5db;
+        }
+        
+        .items-table th {
+            background-color: #e8ebeb;
+            border-bottom: 0.5pt solid #d1d5db;
+            padding: 2mm 3mm;
+            font-weight: 600;
+            color: #000000;
+            text-align: left;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 11.5px;
+        }
+        
+        .items-table th.text-center {
+            text-align: center;
+        }
+        
+        .items-table th.text-right {
+            text-align: right;
+        }
+        
+        .items-table td {
+            border-bottom: 0.5pt solid #d1d5db;
+            padding: 2mm 3mm;
+            color: #000000;
+            vertical-align: top;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 12.5px;
+        }
+        
+        .items-table td.text-center {
+            text-align: center;
+        }
+        
+        .items-table td.text-right {
+            text-align: right;
+        }
+        
+        .pricing-columns{
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+            color: #000000;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .item-description {
+            font-size: 12px;
+            color: #000000;
+            white-space: pre-line;
+            font-weight: 200;
+        }
+        
+        /* Totals Section */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+        
+        .totals-table {
+            width: 350px;
+        }
+        
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        
+        .totals-row.grand-total {
+            border-top: 1px solid #d1d5db;
+            padding-top: 12px;
+            margin-top: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #000000;
+        }
+        
+        .totals-row.grand-total .totals-label,
+        .totals-row.grand-total .totals-value {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .totals-label {
+            font-weight: 500;
+            color: #000000;
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-size: 14px;
+        }
+        
+        .totals-value {
+            color: #000000;
+            font-size: 14px;
+        }
+        
+        /* Sub Total row - 2px larger */
+        .totals-row:first-child .totals-label,
+        .totals-row:first-child .totals-value {
+            font-size: 16px;
+        }
+        
+        .currency {
+            font-family: 'Segoe UI', 'Inter Tight', sans-serif;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            font-size: 12px;
+        }
+        
+        /* Print specific styles */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
+                font-size: 12pt;
+                /* Maintain 4cm top margin in print */
+                padding-top: 4cm;
+            }
+            
+            .container {
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .content {
+                flex: 1;
+                margin-bottom: 20px;
+            }
+            
+            .header {
+                page-break-inside: avoid;
+            }
+            
+            .items-table {
+                page-break-inside: auto;
+            }
+            
+            .items-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            .totals-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <!-- Header - Simplified for letterhead -->
+            <div class="header">
+                <div class="header-left">
+                    <h1>QUOTATION</h1>
+                    <div class="quotation-number">#{{ quotation.quot_number }}</div>
+                </div>
+                <div class="header-right">
+                    <!-- Empty space - company info is on letterhead -->
+                </div>
+            </div>
+            
+            <!-- Customer and Date Details -->
+            <div class="details-section">
+                <div class="customer-details">
+                    <div>To:</div>
+                    <div class="customer-name">{{ quotation.customer.name|default:"No Customer" }}</div>
+                    {% with quotation.customer.addresses|primary_address as address %}
+                        {% if address %}
+                            <div class="customer-address">
+                                {{ address.line1 }}{% if address.line2|default:""|cut:" " %}, {{ address.line2 }}{% endif %}{% if address.city|default:""|cut:" " %}, {{ address.city }}{% endif %}{% if address.zip_code|default:""|cut:" " %}, {{ address.zip_code }}{% endif %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    {% if quotation.customer.contact %}
+                        <div class="customer-contact">{{ quotation.customer.contact }}</div>
+                    {% endif %}
+                    {% if quotation.customer.email %}
+                        <div class="customer-email">{{ quotation.customer.email }}</div>
+                    {% endif %}
+                </div>
+                <div class="date-details">
+                    {% if quotation.created_by %}
+                    <div class="prepared-by">
+                        <div class="prepared-label">Prepared By: {{ quotation.created_by.get_full_name|default:quotation.created_by.username }}</div>
+                        <div class="prepared-contact">
+                            {% if quotation.created_by.email %}{{ quotation.created_by.email }}{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="dates-inline">
+                        <div class="date-item">
+                            <span class="date-label">Issued Date</span>
+                            <span class="date-value">{{ quotation.date|date:"d M Y"|default:"-" }}</span>
+                        </div>
+                        <div class="date-item">
+                            <span class="date-label">Valid Till</span>
+                            <span class="date-value">{{ quotation.required_date|date:"d M Y"|default:"-" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project Description -->
+            <div class="project-section">
+                <h3>Project</h3>
+                <div class="project-description">
+                    {{ project_description }}
+                </div>
+            </div>
+            
+            <!-- Items Table -->
+            <table class="items-table">
+                <colgroup>
+                    <col style="width: 47%;">
+                    <col style="width: 16%;">
+                    <col style="width: 16%;">
+                    <col style="width: 21%;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Item/Description</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-right">Unit Price</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in quotation.items.all %}
+                    <tr>
+                        <td>
+                            <div class="item-name">{{ item.item|default:"Unnamed Item" }}</div>
+                            {% if item.description %}
+                                <div class="item-description">{{ item.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pricing-columns">
+                            {% if item.quantity %}
+                                {{ item.quantity|floatformat:0 }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                        <td class="text-right pricing-columns currency">
+                            {{ item.unit_price|indian_currency_format }}
+                        </td>
+                        <td class="text-right pricing-columns currency">
+                            {{ item.price|indian_currency_format }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #9ca3af;">No items found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Totals -->
+            <div class="totals-section">
+                <div class="totals-table">
+                    {% if quotation.show_subtotal != False %}
+                    <div class="totals-row">
+                        <span class="totals-label">Sub Total:</span>
+                        <span class="totals-value currency">{{ quotation.items|items_subtotal|indian_currency_format }}</span>
+                    </div>
+                    {% endif %}
+                {% if quotation.show_delivery_charges != False %}
+                <div class="totals-row">
+                    <span class="totals-label">Delivery Charges:</span>
+                    <span class="totals-value currency">{{ quotation.delivery_charge|indian_currency_format }}</span>
+                </div>
+                {% endif %}
+                <div class="totals-row">
+                    <span class="totals-label">VAT ({{ quotation.vat_rate_percent|floatformat:0 }}%):</span>
+                    <span class="totals-value currency">{{ quotation.vat_amount|indian_currency_format }}</span>
+                </div>
+                <div class="totals-row grand-total">
+                    <span class="totals-label">Grand Total:</span>
+                    <span class="totals-value currency">{{ quotation.total|indian_currency_format }}</span>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

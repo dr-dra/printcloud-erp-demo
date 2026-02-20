@@ -1,0 +1,234 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+PrintCloud is a web application for print shop management (complete erp system) with separate frontend and backend components:
+
+- **Frontend**: Next.js 15 React application with TypeScript, Tailwind CSS, and Flowbite components
+- **Backend**: Django REST API with multiple database support (PostgreSQL/ MySQL is legacy db), Celery for background tasks
+
+## Development Commands
+Note: I alway have npm run dev running on port 3000 and Django on 8000, please use those instead of starting new ones
+
+### Frontend (Next.js)
+```bash
+# Navigate to frontend directory first
+cd frontend
+
+# Development server
+npm run dev
+npm run dev:turbo  # with Turbopack for faster builds
+
+# Production build and start
+npm run build
+npm start
+
+# Linting
+npm run lint
+```
+
+### Backend (Django)
+```bash
+# Navigate to backend directory first
+cd backend
+
+# Activate virtual environment (if using venv)
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate     # Windows
+
+# Run development server
+python manage.py runserver
+
+# Database migrations
+python manage.py makemigrations
+python manage.py migrate
+
+# Create superuser
+python manage.py createsuperuser
+
+# Run management commands
+python manage.py import_customers
+python manage.py import_costing
+python manage.py import_users_and_employees
+
+# Start Celery worker for background tasks
+celery -A config.celery_app worker --loglevel=info
+
+# Start Celery beat for scheduled tasks (reminders)
+celery -A config.celery_app beat --loglevel=info
+```
+
+## Architecture Overview
+
+### Backend Structure
+- **Django Apps**:
+  - `costing/` - Costing sheets, estimating, and related functionality
+  - `customers/` - Customer management with document support (amazon s3)
+  - `employees/` - Employee management
+  - `users/` - Custom user authentication with JWT tokens
+  - `sales/quotations/` - Sales quotation management with email/print tasks
+  - `reminders/` - Notification system with Celery-based processing
+  - `mailadmin/` - Mail server administration utilities
+
+- **Database**: Multi-database setup with routing support:
+  - Primary database (PostgreSQL/MySQL) 
+  - MySQL legacy database (`pressmanager_db`)
+  - Mail server database (PostgreSQL)
+
+- **Key Features**:
+  - JWT-based authentication with refresh tokens
+  - Custom user model extending Django's User
+  - Management commands for data import
+  - Multi-database routing via `database_router.py`
+  - Celery background tasks for email sending and printing
+  - PDF generation with WeasyPrint for quotations
+  - GhostScript integration for printer format conversion (PCL/PostScript)
+
+### Frontend Structure
+- **Framework**: Next.js 15 with App Router
+- **UI Libraries**: Flowbite React, Tailwind CSS, Lucide React icons
+- **Data Handling**: Axios for API calls, React Hook Form with Yup validation
+- **Key Components**:
+  - `DashboardLayout.tsx` - Main dashboard wrapper
+  - `common/DataTable.tsx` - Standard reusable table component for all list views
+  - `PageTemplate.tsx` - Standard page layout template
+  - `costing/CostingGrid.tsx` - Specialized calculation grid for costing sheets
+  - `EmailModal.tsx` - Email sending interface for quotations
+  - `PrintModal.tsx` - Print job creation interface
+  - `notifications/` - Notification dropdown and management components
+
+- **API Integration**: 
+  - Centralized API client in `lib/api.ts`
+  - JWT token management with automatic refresh
+  - Security headers and timeout configuration
+
+### Key Pages & Features
+- Dashboard with production workflow (pre-press, press, post-press, CTP)
+- Sales management (costing, customers, quotations, orders, invoices, point of sale)
+- Costing sheets with dynamic grid calculations
+- Customer management with document upload support
+- Authentication with password reset functionality
+- Email quotations with PDF attachments (background processing)
+- Print job management with PrintCloud client integration
+- Notification system with real-time updates
+
+## Database Configuration
+
+The application uses Django's multi-database setup with:
+- `default`: Main application database (configured via `DATABASE_URL`)
+- `mysql`: Legacy MySQL database for existing data
+- `mailserver`: PostgreSQL database for mail server integration
+
+Database routing is handled by `config/database_router.py` to direct queries to appropriate databases.
+
+## Environment Variables
+
+Key environment variables for development:
+- `DATABASE_URL` - Primary database connection string
+- `SECRET_KEY` - Django secret key
+- `DEBUG` - Enable/disable debug mode
+- `ALLOWED_HOSTS` - Comma-separated list of allowed hosts
+- `NEXT_PUBLIC_API_URL` - Frontend API base URL
+
+## Testing
+
+The codebase includes test files for various components:
+- Backend: Standard Django test files in each app (`tests.py` files)
+- Frontend: Test files for key components like quotations page (`test_quotations_page.js`)
+
+Run Django tests with:
+```bash
+cd backend
+python manage.py test
+```
+
+### Frontend Testing
+Frontend tests can be run from the frontend directory (check specific test files for framework used).
+
+## Configuration Files
+
+### Next.js Configuration
+- `next.config.ts` - Configures API rewrites to proxy `/api/*` requests to Django backend on port 8000
+- `tailwind.config.js` - Tailwind CSS configuration
+- `eslint.config.js` - ESLint configuration for code quality
+
+### Django Configuration
+- `config/settings.py` - Main Django settings
+- `config/database_router.py` - Multi-database routing configuration
+- `manage.py` - Includes PyMySQL configuration for MySQL compatibility
+
+
+
+## Component Guidelines
+
+### Table Components
+The application uses a standardized approach for displaying tabular data:
+
+#### Primary Table Component
+- **Use**: `common/DataTable.tsx` for all list views and data tables
+- **Features**: Pagination, sorting, search, filters, actions, loading states
+- **Examples**: Costing list, Quotations list, Customers list
+- **When to use**: Any time you need to display a list of records
+
+#### Specialized Components
+- **CostingGrid**: `costing/CostingGrid.tsx` for costing calculation sheets
+- **Purpose**: Complex formula inputs, calculations, and specialized data entry
+- **When to use**: Only for unique data input requirements that can't be handled by standard tables
+
+#### Component Selection Rules
+1. **Default choice**: Always use `common/DataTable.tsx` for new list/table pages
+2. **Exception**: Only create specialized components for unique data input patterns
+3. **Consistency**: All list views should use the same DataTable component for consistent UX
+
+## PrintCloud Client Integration
+
+The application integrates with a C# Windows service (`printcloudclient/`) for local printing capabilities:
+
+### PrintCloudClient Features
+- **Local printer management**: Handles Windows printers directly
+- **Print job processing**: Processes print jobs queued from the web application
+- **Format conversion**: Supports PDF, PCL, and PostScript formats
+- **Background service**: Runs as a Windows service for continuous operation
+
+### Print Job Workflow
+1. Web application creates print jobs via Celery background tasks
+2. Print jobs are stored in the database with base64-encoded print data
+3. PrintCloudClient polls the API for pending print jobs
+4. PrintCloudClient downloads and processes print jobs on the local machine
+5. Documents are sent to the configured printer using Windows Print API
+
+### Print Job Creation
+- **Quotation printing**: Uses `create_quotation_print_job_task` Celery task
+- **Automatic format detection**: Determines optimal format (PDF/PCL/PostScript) based on printer type
+- **User printer preferences**: Uses user's default A4/A5 printer settings
+- **PDF virtual printer support**: Special handling for PDF virtual printers
+
+## Background Task Processing
+
+The application uses Celery for background task processing:
+
+### Email Tasks
+- **Quotation emails**: `send_quotation_email_task` handles PDF generation and email sending
+- **Template system**: Uses Django templates for email formatting
+- **Retry logic**: Automatic retry with exponential backoff for failed tasks
+
+### Print Tasks
+- **Print job creation**: `create_quotation_print_job_task` prepares documents for printing
+- **GhostScript integration**: Converts PDFs to printer-specific formats when needed
+- **Printer detection**: Automatic detection of physical vs. virtual printers
+
+### Scheduled Tasks
+- **Reminder processing**: Celery beat processes due reminders every 30 minutes
+- **Notification cleanup**: Automated maintenance of notification records
+
+# USER NOTES
+Only do what I ask you to do No more no less, unless I state.
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

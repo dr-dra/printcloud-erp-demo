@@ -1,0 +1,385 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;600;800&display=swap" rel="stylesheet">
+    <title>Payment Receipt</title>
+
+    <style>
+        @page { size: A5 landscape; margin: 16mm 10mm 24mm 10mm; }
+
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 10pt;
+            margin: 0;
+            color: #000;
+        }
+
+        .wrap { padding: 0 0 6mm 0; }
+
+        table.receipt {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .receipt td {
+            border: 0;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        /* ✅ GLOBAL vertical compaction */
+        .receipt tr td {
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+        .title {
+            font-weight: 800;
+            font-size: 16pt;
+            text-align: right;
+        }
+
+        .section {
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 10pt;
+        }
+
+        .label {
+            font-weight: 300;
+            font-size: 10pt;
+            white-space: nowrap;
+        }
+
+        .field {
+            font-weight: 600;
+            font-size: 10pt;
+        }
+
+        .muted {
+            font-size: 8pt;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+
+        .amount-display {
+            font-size: 14pt;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .amount-words {
+            font-size: 8pt;
+            font-weight: 300;
+            text-transform: capitalize;
+        }
+
+        .qrbox {width:100%; }
+
+        .qrbox svg {
+            width: 60px;
+            height: 60px;
+        }
+
+        .qr-cell {text-align: right;}
+
+        /* Allocation */
+        .allocation-title {
+            font-size: 9pt;
+            font-weight: 800;
+            margin: 8px 0 4px 5px;
+            text-transform: uppercase;
+        }
+
+        table.allocation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+
+        table.allocation-table th,
+        table.allocation-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+        }
+
+        table.allocation-table th {
+            background: #f5f5f5;
+            font-weight: 300;
+            text-align: right;
+        }
+
+        table.allocation-table th:first-child,
+        table.allocation-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            width: 40%;
+        }
+
+        table.allocation-table td.amount {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .footer-container {
+            display: table;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .footer-left,
+        .footer-right {
+            display: table-cell;
+            vertical-align: bottom;
+            width: 50%;
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 120px;
+            margin-top: 75px;
+        }
+
+        .signature-label {
+            font-size: 7pt;
+            font-weight: 300;
+        }
+
+        .footer-note {
+            font-size: 8pt;
+            font-weight: 300;
+        }
+
+        .thank-you {
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .company-details {
+            position: fixed;
+            left: 0;
+            bottom: 10mm;
+            width: 100%;
+            font-weight: 300;
+            font-size: 11pt;
+            text-align: center;
+        }
+
+        .company-name {
+            font-weight: 800;
+            font-size: 15pt;
+        }
+
+        .detail-item {
+            display: inline-block;
+            margin: 0 6px;
+            vertical-align: middle;
+        }
+
+        .detail-icon {
+            width: 10px;
+            height: 10px;
+            vertical-align: -1px;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrap">
+
+<table class="receipt">
+    <colgroup>
+        <col style="width:18%">
+        <col style="width:54%">
+        <col style="width:11%">
+        <col style="width:17%">
+    </colgroup>
+
+    {% if include_company_details %}
+    <tr>
+        <td colspan="2">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="{{ company.name }}" style="width: 220px; height: auto;">
+            {% else %}
+            <div style="font-weight: 800; font-size: 14pt;">{{ company.name }}</div>
+            {% endif %}
+        </td>
+        <td colspan="2" class="title">PAYMENT RECEIPT</td>
+    </tr>
+    {% else %}
+    <!-- Title -->
+    <tr>
+        <td colspan="2"></td>
+        <td colspan="2" class="title">PAYMENT RECEIPT</td>
+    </tr>
+    {% endif %}
+
+    <!-- Customer + Meta -->
+    <tr>
+        <td class="label">Received From</td>
+        <td rowspan="3">
+            <div class="muted">
+                <div style="font-weight:600;">
+                    {{ invoice.customer.name|default:"Valued Customer" }}
+                </div>
+                {% if invoice.customer %}
+                    {% with invoice.customer.addresses|primary_address as address %}
+                        {% if address %}
+                            {{ address.line1 }}{% if address.line2|default:""|cut:" " %}, {{ address.line2 }}{% endif %}{% if address.city|default:""|cut:" " %}, {{ address.city }}{% endif %}{% if address.zip_code|default:""|cut:" " %}, {{ address.zip_code }}{% endif %}<br>
+                        {% endif %}
+                        {% if address and address.phone %}
+                            {{ address.phone }}
+                        {% elif invoice.customer.contact %}
+                            {{ invoice.customer.contact }}
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </td>
+        <td class="label">Receipt No.</td>
+        <td class="field">{{ payment.receipt_number }}</td>
+    </tr>
+
+    <tr>
+        <td></td>
+        <td class="label">Date</td>
+        <td class="field">{{ payment.payment_date|date:"d M Y" }}</td>
+    </tr>
+
+    <tr>
+        <td></td>
+        <td class="label">Cashier</td>
+        <td class="field">{{ payment.created_by.get_full_name|default:"Staff" }}</td>
+    </tr>
+
+    <!-- Payment -->
+    <tr>
+        <td colspan="4" class="section">PAYMENT</td>
+    </tr>
+
+    <tr>
+        <td class="label">Amount</td>
+        <td colspan="2">
+            <div class="amount-display">Rs. {{ payment.amount|floatformat:2 }}</div>
+            <div class="amount-words">{{ amount_in_words }} only</div>
+        </td>
+        <td rowspan="3" class="qr-cell">
+            <div class="qrbox">
+                {{ qr_code_svg|safe }}
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label">Method</td>
+        <td class="field" colspan="2">{{ payment.get_payment_method_display }}</td>
+    </tr>
+
+    {% if payment.payment_method != 'cash' %}
+    <tr>
+        <td class="label">
+            {% if payment.payment_method == 'cheque' %}
+                Cheque Details
+            {% else %}
+                Reference
+            {% endif %}
+        </td>
+        <td colspan="2" class="field">
+            {% if payment.payment_method == 'cheque' and payment.cheque_number %}
+                {{ payment.cheque_number }}
+                {% if payment.bank_name %} ({{ payment.bank_name }}){% endif %}
+                {% if payment.cheque_date %} Dated: {{ payment.cheque_date|date:"d/m/Y" }}{% endif %}
+                <span style="font-style: italic;">[Subject to realization]</span>
+            {% elif payment.payment_method == 'bank_transfer' and payment.reference_number %}
+                {{ payment.reference_number }}
+            {% elif payment.payment_method == 'card' and payment.reference_number %}
+                {{ payment.reference_number }}
+            {% else %}
+                -
+            {% endif %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+
+<!-- Allocation -->
+<div class="allocation-title">ALLOCATION</div>
+
+<table class="allocation-table">
+    <thead>
+        <tr>
+            <th>Document</th>
+            <th>Prev Balance</th>
+            <th>Paid</th>
+            <th>Balance After</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Invoice #{{ invoice.invoice_number }}</td>
+            <td class="amount">Rs. {{ invoice.balance_due|add:payment.amount|floatformat:2 }}</td>
+            <td class="amount">Rs. {{ payment.amount|floatformat:2 }}</td>
+            <td class="amount">Rs. {{ invoice.balance_due|floatformat:2 }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Footer -->
+<div class="footer-container">
+    <div class="footer-left">
+        <div class="footer-note">This is a computer-generated receipt and is valid without signature.</div>
+    </div>
+    <div class="footer-right">
+        <div class="thank-you">Thank you for your payment!</div>
+    </div>
+</div>
+
+{% if include_company_details %}
+<div class="company-details">
+    <div class="company-name">Kandy Offset Printers (Pvt) Ltd</div>
+    <div>
+        <span class="detail-item">
+            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="#007abd" stroke-width="2">
+                <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                <circle cx="12" cy="11" r="2.5"></circle>
+            </svg>
+            No. 947 Peradeniya Road Kandy
+        </span>
+        <span class="detail-item">
+            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="#007abd" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.86.33 1.7.62 2.5a2 2 0 0 1-.45 2.11L9.09 10.91a16 16 0 0 0 4 4l1.58-1.08a2 2 0 0 1 2.11-.45c.8.29 1.64.5 2.5.62a2 2 0 0 1 1.72 2z"></path>
+            </svg>
+            0814 946 426 / 0814 946 646
+        </span>
+        <span class="detail-item">
+            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="#007abd" stroke-width="2">
+                <path d="M4 4h16v16H4z"></path>
+                <path d="M4 6l8 7 8-7"></path>
+            </svg>
+            info@printsrilanka.com
+        </span>
+        <span class="detail-item">
+            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="#007abd" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M2 12h20"></path>
+                <path d="M12 2a15 15 0 0 1 0 20"></path>
+                <path d="M12 2a15 15 0 0 0 0 20"></path>
+            </svg>
+            kandyoffset.com
+        </span>
+    </div>
+</div>
+{% endif %}
+
+</div>
+</body>
+</html>

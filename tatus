@@ -1,0 +1,5 @@
+[33m72e5b60b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/test-tailwind-next[m[33m, [m[1;31morigin/test-next-16[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mtest-tailwind-next[m[33m, [m[1;32mtest-next-16[m[33m)[m Upgrade to Next.js 16 (working build + start)
+[33m1213ecd2[m stable on next 15.3.x before next 16 test
+[33mee5826c9[m updated docker-compose.yml
+[33m01d81a8a[m Add Docker setup (compose, Dockerfiles, nginx)
+[33m7fc3c8b0[m Fix Auth Contx. New Quoation Using Costing
