@@ -1,82 +1,70 @@
-# PrintCloud ERP
+# PrintCloud ERP (Portfolio Demo)
 
-Full-stack ERP system for commercial printing operations, built with modern web technologies.
+Full-stack ERP platform for commercial printing workflows, including sales, purchasing, inventory, POS, and accounting.
 
-## 🚀 Live Demo
-**[demo.printcloud.io](https://demo.printcloud.io)**  
-*Demo credentials available upon request*
+## Live Demo
+- https://demo.printcloud.io
+- Demo credentials available on request
 
-## 🛠️ Tech Stack
+## What This Project Demonstrates
+- End-to-end business workflow design (quotation -> order -> invoice -> payment)
+- Full-stack product engineering with modern frontend and backend architecture
+- Real-time and async processing patterns (WebSockets + Celery workers)
+- Cloud-integrated features (S3 storage, Bedrock-based document extraction, SES/communications)
+- Production-style deployment and operations mindset
 
-**Frontend:**
-- Next.js 14 (App Router)
-- TypeScript
-- React
-- Tailwind CSS
+## Core Features
+- Sales: quotations, orders, invoices, receipts
+- Purchasing: suppliers, purchase orders, supplier bills
+- Accounting: chart of accounts, journals, fiscal periods, reports
+- POS: live order/cashier flows
+- Document workflows: AI-assisted bill data extraction
+- Communications: email and WhatsApp integration points
 
-**Backend:**
-- Django & Django REST Framework
-- PostgreSQL
-- Redis
-- Celery (async task processing)
+## Tech Stack
+- Frontend: Next.js 16, React, TypeScript, Tailwind CSS
+- Backend: Django, Django REST Framework
+- Data: PostgreSQL
+- Async/Queue: Redis, Celery, Celery Beat
+- Realtime: WebSockets (ASGI/Daphne)
+- Infra: Nginx, Docker Compose
+- Cloud integrations: AWS S3, Bedrock, SES
 
-**Real-time & Integration:**
-- WebSockets for live POS updates
-- AWS services (S3, Bedrock, SES)
-- WhatsApp Business API
+## Local Development (Quick Start)
 
-**Infrastructure:**
-- Nginx reverse proxy
-- Docker Compose
-- SSL/TLS encryption
+### Backend
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
-## ✨ Key Features
+### Workers
 
-- **Real-time POS System** - WebSocket-based synchronization between order entry and cashier terminals
-- **AI Document Parsing** - AWS Bedrock integration for automated supplier bill data extraction
-- **Complete Workflows** - Quotations, sales orders, invoices, purchase bills, inventory management
-- **Accounting System** - Double-entry bookkeeping with automated journal generation
-- **Multi-channel Communication** - WhatsApp Business API and transactional email (AWS SES)
-- **Multi-tenant Architecture** - Supports multiple business operations
+cd backend
+source .venv/bin/activate
+celery -A config worker --loglevel=info
+celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
-## 🎯 Purpose
+### Frontend
 
-Built to modernize commercial printing operations by replacing paper-based processes with a unified digital platform. Handles the complete business workflow from quotation to delivery, with specialized features for printing industry requirements (paper inventory, plate management, job costing).
+cd frontend
+npm install
+npm run dev
 
-## 📚 About This Project
+## Configuration
 
-Developed as a personal project while completing Graduate Certificate in Programming and Development at Swinburne University (High Distinction results). Demonstrates full-stack development capability from system architecture and database design through to production deployment and operations.
+- Backend env: backend/.env
+- Frontend env: frontend/.env.local
+- Secrets are never committed; use placeholder values in .env.example.
 
-**Current Status:** In production use, actively maintained and enhanced.
+## Portfolio Scope
 
----
+This repository is a portfolio/demo version of PrintCloud. Production secrets, credentials, and sensitive customer data
+are excluded.
 
-## 📫 Contact
+## Contact
 
-For demo access or technical questions: dharshanae@yahoo.com
-
----
-
-*This is a private production codebase. Access available to potential employers and collaborators upon request.*
-```
-
----
-
-2. **Set up repo topics** (after creation):
-   - Click "⚙️ Settings" or look for "Manage topics"
-   - Add: `nextjs`, `typescript`, `django`, `postgresql`, `erp`, `fullstack`, `websockets`, `aws`, `react`, `tailwindcss`
-
-3. **Add website link:**
-   - In repo settings, add: `https://demo.printcloud.io`
-
----
-
-## ⚡ Quick Summary - Fill This In:
-```
-Owner: dharshanae
-Name: printcloud
-Description: Full-stack ERP system for commercial printing - Next.js, TypeScript, Django, PostgreSQL, WebSockets, AWS
-Visibility: ✅ Private
-README: ✅ Yes
-.gitignore: ✅ Python
-License: ⬜ No
+- Email: dharshanae@yahoo.com
