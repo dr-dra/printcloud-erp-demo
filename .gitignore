@@ -1,47 +1,64 @@
-# Compiled Python files
-*.pyc
+# Python
 __pycache__/
+*.py[cod]
+*.so
+*.log
 
-# Environment files
-.env
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+backend/.venv/
 
-# Text and Markdown files
-*.txt
-*.md
-!conductor/**/*.md
-
-# Specific backend folders/files
-backend/customer-files/
-backend/customer_documents/
-
-# SQLite database files
-*.sqlite3
+# Databases
 db.sqlite3
+*.sqlite3
 
-# Deployment scripts
-deploy_to_vps.sh
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+coverage/
 
-# Design files and old frontend folders
-design-files/
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env.local
+backend/.env.bedrock_update
+eval "$(ssh-agent -s)"*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# .NET build outputs
+printcloudclient/bin/
+printcloudclient/obj/
+
+# Project-local scratch folders/files
 .documents/
 .cursor/
 .claude/
 .gemini/
 prompts/
 frontend-old/
-node_modules
 new_venv/
-venv/
-.env/
-__pycache__/
 logs/
-backend/.venv/
 .aider*
 
-# .NET build outputs
-printcloudclient/bin/
-printcloudclient/obj/
-backend/.env
-frontend/.env.local
-eval "$(ssh-agent -s)"*
-backend/.env.bedrock_update
+# Optional local artifacts
+design-files/
+backend/customer-files/
+backend/customer_documents/
+deploy_to_vps.sh
