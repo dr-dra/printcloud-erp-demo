@@ -250,3 +250,99 @@ div[class*='absolute'][class*='z-'] {
     transition-duration: 0ms !important;
   }
 }
+
+/* Login-only subtle ambient background */
+.login-ambient {
+  background-color: #f8fafc;
+}
+
+.dark .login-ambient {
+  background-color: #030712;
+}
+
+.login-ambient__layer {
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+}
+
+.login-ambient__base {
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 12% 8%, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0) 58%),
+    radial-gradient(90% 70% at 88% 92%, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0) 56%),
+    radial-gradient(70% 56% at 48% 42%, rgba(148, 163, 184, 0.06) 0%, rgba(148, 163, 184, 0) 72%);
+}
+
+.dark .login-ambient__base {
+  background:
+    radial-gradient(120% 90% at 12% 8%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 58%),
+    radial-gradient(90% 70% at 88% 92%, rgba(20, 184, 166, 0.12) 0%, rgba(20, 184, 166, 0) 56%),
+    radial-gradient(70% 56% at 48% 42%, rgba(148, 163, 184, 0.08) 0%, rgba(148, 163, 184, 0) 72%);
+}
+
+.login-ambient__blob {
+  filter: blur(52px);
+  opacity: 0.16;
+  animation: loginAmbientFloat 28s ease-in-out infinite alternate;
+}
+
+.login-ambient__blob--a {
+  top: -12%;
+  left: -10%;
+  width: 48vw;
+  height: 48vw;
+  max-width: 700px;
+  max-height: 700px;
+  background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.36), rgba(56, 189, 248, 0));
+}
+
+.login-ambient__blob--b {
+  right: -12%;
+  bottom: -16%;
+  width: 42vw;
+  height: 42vw;
+  max-width: 620px;
+  max-height: 620px;
+  background: radial-gradient(circle at 65% 65%, rgba(20, 184, 166, 0.3), rgba(20, 184, 166, 0));
+  animation-duration: 34s;
+  animation-direction: alternate-reverse;
+}
+
+.login-ambient__grain {
+  inset: 0;
+  opacity: 0.045;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(15, 23, 42, 0.2),
+    rgba(15, 23, 42, 0.2) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.dark .login-ambient__grain {
+  opacity: 0.03;
+}
+
+@keyframes loginAmbientFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.5%, -1.8%, 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(-1.8%, 1.2%, 0) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-ambient__blob {
+    animation: none;
+  }
+
+  .login-ambient__grain {
+    opacity: 0.02;
+  }
+}

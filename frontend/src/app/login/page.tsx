@@ -81,13 +81,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4">
+    <div className="login-ambient min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+      <div className="login-ambient__layer login-ambient__base" aria-hidden />
+      <div className="login-ambient__layer login-ambient__blob login-ambient__blob--a" aria-hidden />
+      <div className="login-ambient__layer login-ambient__blob login-ambient__blob--b" aria-hidden />
+      <div className="login-ambient__layer login-ambient__grain" aria-hidden />
+
+      <div
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 p-1 -translate-x-[30px]"
+        style={{ zIndex: 20 }}
+      >
         <ThemeToggle />
       </div>
 
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-8 relative z-10">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">PrintCloud.io</h1>
@@ -101,7 +108,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-[2px]">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Error Alert */}
             {error && (
