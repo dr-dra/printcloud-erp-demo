@@ -11,7 +11,6 @@ import { StandardTextInput } from '@/components/common/inputs';
 import { HiMail, HiLockClosed, HiEye, HiEyeOff, HiShieldCheck } from 'react-icons/hi';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
-import { api } from '@/lib/api';
 
 // Form validation schema with enhanced security
 const loginSchema = yup.object({
@@ -95,9 +94,26 @@ export default function LoginPage() {
       setError('');
       setIsMagicLoading(true);
       try {
-        const response = await api.post('/users/demo/magic-link/', { token });
-        const access = response.data?.access;
-        const refresh = response.data?.refresh;
+        // Ensure stale tokens don't interfere with magic-link authentication flow.
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+
+        const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+        const endpoint = `${baseApiUrl.endsWith('/') ? baseApiUrl.slice(0, -1) : baseApiUrl}/users/demo/magic-link/`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Magic link request failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const access = payload?.access;
+        const refresh = payload?.refresh;
 
         if (!access || !refresh) {
           throw new Error('Missing tokens in magic link response');
